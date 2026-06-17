@@ -66,9 +66,11 @@ if ! command -v composer >/dev/null 2>&1; then
     curl -sS https://getcomposer.org/installer | php -- --install-dir=/usr/local/bin --filename=composer
 fi
 
-echo "==> Bagimliliklar yukleniyor (composer install)"
+echo "==> Bagimliliklar yukleniyor (composer install, ${PHP_BIN})"
 cd "$APP_DIR"
-composer install --no-dev --optimize-autoloader --no-interaction
+COMPOSER_BIN="$(command -v composer)"
+# Sistemin varsayilan 'php' surumu farkli olabilir (orn. 8.5); KBot icin acikca php8.3 kullan.
+"$PHP_BIN" "$COMPOSER_BIN" install --no-dev --optimize-autoloader --no-interaction
 
 echo "==> Ortam dosyasi (.env)"
 if [[ ! -f .env ]]; then
@@ -77,7 +79,7 @@ fi
 # Sunucu icin uretim ayarlari
 sed -i 's/^APP_ENV=.*/APP_ENV=production/' .env
 sed -i 's/^APP_DEBUG=.*/APP_DEBUG=false/' .env
-php artisan key:generate --force
+"$PHP_BIN" artisan key:generate --force
 
 echo "==> Izinler ayarlaniyor (www-data)"
 mkdir -p storage/framework/{cache,sessions,views} storage/logs bootstrap/cache
