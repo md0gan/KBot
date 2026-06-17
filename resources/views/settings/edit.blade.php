@@ -108,4 +108,15 @@
             </div>
         </form>
     </div>
+
+    <script>
+        function kbConfirmLive(form) {
+            var sel = form.querySelector('[name="trading_mode"]');
+            var old = form.getAttribute('data-old-mode');
+            if (sel && sel.value === 'live' && old === 'simulation') {
+                return confirm('CANLI moda geçiyorsunuz.\n\nSimülasyon işlemleri ve TÜM pozisyonlar silinecek/sıfırlanacak. Bu işlem geri alınamaz.\n\nDevam edilsin mi?');
+            }
+            return true;
+        }
+    </script>
 @endsection
