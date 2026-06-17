@@ -99,6 +99,12 @@
                         <form method="POST" action="{{ route('coins.evaluate', $coin) }}" class="flex-1">@csrf
                             <button class="w-full text-sm px-2 py-1.5 rounded-lg bg-white border border-slate-300 hover:bg-slate-50">Değerlendir</button>
                         </form>
+                        <a href="{{ route('coins.edit', $coin) }}" class="text-sm px-2 py-1.5 rounded-lg bg-white border border-slate-300 hover:bg-slate-50">Düzenle</a>
+                        <form method="POST" action="{{ route('coins.destroy', $coin) }}"
+                              onsubmit="return confirm('{{ $coin->symbol }} silinsin mi? Tüm işlem geçmişi de silinir.');">
+                            @csrf @method('DELETE')
+                            <button class="text-sm px-2 py-1.5 rounded-lg border border-red-300 text-red-600 hover:bg-red-50">Sil</button>
+                        </form>
                     </div>
                 </div>
             @endforeach
