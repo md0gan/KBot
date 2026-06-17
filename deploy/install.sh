@@ -176,7 +176,10 @@ echo " Simdi tarayicidan kurulum sihirbazini acin:"
 if [[ "$DOMAIN" == "_" ]]; then
     echo "    http://${IP_ADDR:-SUNUCU_IP}/install"
 else
-    echo "    http://${DOMAIN}/install"
+    PROTO="http"
+    [[ "${SSL_OK:-0}" -eq 1 ]] && PROTO="https"
+    echo "    ${PROTO}://${DOMAIN}/install"
+    [[ "$PROTO" == "https" ]] && echo "    (Sihirbazda APP_URL'i https://${DOMAIN} olarak girin)"
 fi
 echo ""
 echo " Sihirbazda MySQL bilgilerini girin ve ilk yoneticiyi olusturun."
