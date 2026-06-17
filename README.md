@@ -173,6 +173,39 @@ Veritabanı/admin bilgileri burada girildiği için elle `.env` düzenlemeye vey
 
 ---
 
+### Cloudflare arkasındaysanız (SSL — önerilen)
+
+Alan adınız Cloudflare üzerinden (turuncu bulut/proxied) geliyorsa, Let's Encrypt/certbot
+genelde sorun çıkarır (Error 526 vb.). En sağlıklı yol **Cloudflare Origin Certificate**'tır:
+
+1. Kurulumu Cloudflare modunda yapın (certbot atlanır):
+
+   ```bash
+   sudo CLOUDFLARE=1 DOMAIN=kbot.modago.com.tr bash deploy/install.sh
+   ```
+
+2. Cloudflare Dashboard → **SSL/TLS → Origin Server → Create Certificate**. Çıkan iki kutuyu
+   sunucuda dosyaya kaydedin:
+
+   ```bash
+   sudo mkdir -p /etc/ssl/cloudflare
+   sudo nano /etc/ssl/cloudflare/kbot.modago.com.tr.pem   # Origin Certificate yapıştır
+   sudo nano /etc/ssl/cloudflare/kbot.modago.com.tr.key   # Private Key yapıştır
+   sudo chmod 600 /etc/ssl/cloudflare/kbot.modago.com.tr.key
+   ```
+
+3. Nginx'i 443 için yapılandırın ve CF modunu **Full (strict)** yapın:
+
+   ```bash
+   sudo DOMAIN=kbot.modago.com.tr bash deploy/cloudflare-ssl.sh
+   ```
+
+Sonuç: uçtan uca şifreli HTTPS, 15 yıl geçerli, yenileme derdi yok. Site:
+`https://kbot.modago.com.tr/install`.
+
+> Cloudflare kullanmıyorsanız bu adımları atlayın; `DOMAIN` verince script Let's Encrypt
+> ile otomatik SSL alır.
+
 ## Bot Nasıl Çalışır? (Cron)
 
 Bot bir Laravel **scheduler** ile çalışır; sürekli açık bir süreç (daemon) gerekmez.
