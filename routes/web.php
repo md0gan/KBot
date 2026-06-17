@@ -12,6 +12,19 @@ use Illuminate\Support\Facades\Route;
 
 /*
 |--------------------------------------------------------------------------
+| Kurulum sihirbazi (yalnizca kurulu degilken erisilebilir)
+|--------------------------------------------------------------------------
+*/
+Route::prefix('install')->name('install.')->group(function () {
+    Route::get('/', [InstallController::class, 'index'])->name('index');
+    Route::get('database', [InstallController::class, 'database'])->name('database');
+    Route::post('database', [InstallController::class, 'saveDatabase'])->name('database.save');
+    Route::get('admin', [InstallController::class, 'admin'])->name('admin');
+    Route::post('admin', [InstallController::class, 'saveAdmin'])->name('admin.save');
+});
+
+/*
+|--------------------------------------------------------------------------
 | Misafir (giris yapmamis) rotalari
 |--------------------------------------------------------------------------
 */
