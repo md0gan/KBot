@@ -299,7 +299,7 @@ class TradingBot
                 'realized_profit' => $proceeds,
                 'status' => $status,
                 'order_id' => $orderId,
-                'reason' => 'Kar-al: carpana ulasildi, kar USDT yapildi',
+                'reason' => 'Kar-al: carpana ulasildi, kar nakde cevrildi',
                 'raw' => $raw,
                 'executed_at' => now(),
             ]);
