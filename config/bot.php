@@ -22,7 +22,7 @@ return [
     |--------------------------------------------------------------------------
     */
     'default_mode' => env('BOT_DEFAULT_MODE', 'simulation'), // simulation | live
-    'default_quote' => env('BOT_DEFAULT_QUOTE', 'USDT'),
+    'default_quote' => env('BOT_DEFAULT_QUOTE', 'TRY'),
     'default_buy_amount' => 10.0,        // her periyotta harcanacak kote miktar
     'default_interval' => 'weekly',       // hourly | daily | weekly | monthly
     'default_profit_multiplier' => 2.0,   // deger >= carpan x sermaye olunca kar-al
