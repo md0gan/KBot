@@ -130,11 +130,16 @@ Veya `/register` üzerinden yeni hesap oluşturun. (İlk işiniz şifreyi deği�
 MySQL'in kurulu olduğu **boş bir Ubuntu 22.04/24.04** sunucuda tek komutla kurulum:
 
 ```bash
-git clone https://github.com/md0gan/KBot.git
-cd KBot
-sudo bash deploy/install.sh
-# Alan adı ile:  sudo DOMAIN=bot.ornek.com bash deploy/install.sh
+# Projeyi /var/www altına klonlayın (Nginx erişimi için önerilir; /home altında 403 olabilir)
+sudo mkdir -p /var/www
+cd /var/www
+sudo git clone https://github.com/md0gan/KBot.git kbot
+cd kbot
+sudo DOMAIN=bot.ornek.com bash deploy/install.sh
 ```
+
+> Kurulum, scriptin bulunduğu **proje klasörüne (yerinde)** yapılır; ayrı bir yere kopyalamaz.
+> Bu yüzden `/var/www/kbot` önerilir. `/home` veya `/root` altında kurarsanız script sizi uyarır.
 
 Script şunları yapar: PHP 8.3 + eklentiler, Composer, **Nginx + PHP-FPM**, dosya izinleri,
 `APP_KEY` üretimi ve **scheduler için cron** (`* * * * * php artisan schedule:run`).
