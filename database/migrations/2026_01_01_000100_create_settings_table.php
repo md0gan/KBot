@@ -22,7 +22,7 @@ return new class extends Migration
             $table->unsignedInteger('recv_window')->default(5000);
 
             // Genel ayarlar
-            $table->string('default_quote', 16)->default('USDT');
+            $table->string('default_quote', 16)->default('TRY');
             $table->enum('trading_mode', ['simulation', 'live'])->default('simulation');
             $table->boolean('bot_enabled')->default(true);
 
