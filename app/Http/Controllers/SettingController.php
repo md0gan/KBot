@@ -20,6 +20,7 @@ class SettingController extends Controller
     public function update(Request $request): RedirectResponse
     {
         $setting = $request->user()->settings();
+        $oldMode = $setting->trading_mode;
 
         $data = $request->validate([
             'api_key' => ['nullable', 'string', 'max:255'],
