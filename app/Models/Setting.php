@@ -73,4 +73,11 @@ class Setting extends Model
     {
         return filled($this->api_key) && filled($this->api_secret);
     }
+
+    public function hasTelegram(): bool
+    {
+        return (bool) $this->telegram_enabled
+            && filled($this->telegram_bot_token)
+            && filled($this->telegram_chat_id);
+    }
 }
