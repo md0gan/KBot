@@ -306,6 +306,7 @@ bakiyesi saatlik `bot:balance-check` ile kontrol edilir ve azalma/eşik altı du
 php artisan bot:dca            # Vadesi gelen alımları yap
 php artisan bot:evaluate       # Kar-al değerlendirmesi
 php artisan bot:sync-symbols   # Sembol filtrelerini güncelle
+php artisan bot:balance-check  # Canlı bakiye kontrolü + Telegram bildirimi
 php artisan bot:dca --user=1   # Sadece belirli kullanıcı için
 php artisan bot:ping           # Botun ayakta olduğunu test et
 ```
