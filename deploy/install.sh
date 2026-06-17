@@ -17,6 +17,7 @@
 set -euo pipefail
 
 PHP_VER="${PHP_VER:-8.3}"
+PHP_BIN="php${PHP_VER}"   # KBot her zaman bu surumu kullanir (sistemin 'php' varsayilanina dokunmaz)
 DOMAIN="${DOMAIN:-_}"
 EMAIL="${EMAIL:-}"
 APP_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
