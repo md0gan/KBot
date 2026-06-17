@@ -5,6 +5,7 @@ use App\Http\Controllers\Auth\AuthController;
 use App\Http\Controllers\BotController;
 use App\Http\Controllers\CoinController;
 use App\Http\Controllers\DashboardController;
+use App\Http\Controllers\Install\InstallController;
 use App\Http\Controllers\SettingController;
 use App\Http\Controllers\TradeController;
 use Illuminate\Support\Facades\Route;
