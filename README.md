@@ -123,7 +123,7 @@ Tarayıcıdan `http://localhost:8000` adresine gidin.
 
 Veya `/register` üzerinden yeni hesap oluşturun. (İlk işiniz şifreyi değiştirmek olsun.)
 
-> Seed ile **BTC_USDT** ve **ETH_USDT** örnek olarak (kapalı/simülasyon) eklenir.
+> Seed ile **BTC_TRY** ve **ETH_TRY** örnek olarak (kapalı/simülasyon) eklenir.
 > Panelden "Başlat" diyerek aktif edebilirsiniz.
 
 ---
