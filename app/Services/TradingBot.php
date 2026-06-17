@@ -4,6 +4,7 @@ namespace App\Services;
 
 use App\Models\BotLog;
 use App\Models\Coin;
+use App\Models\Position;
 use App\Models\Setting;
 use App\Models\Trade;
 use App\Models\User;
