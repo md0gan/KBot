@@ -52,6 +52,11 @@ Route::middleware('auth')->group(function () {
     Route::post('settings/test', [SettingController::class, 'test'])->name('settings.test');
     Route::post('settings/mode', [SettingController::class, 'toggleMode'])->name('settings.mode');
 
+    // Hesap / sifre
+    Route::get('account', [AccountController::class, 'edit'])->name('account.edit');
+    Route::put('account/profile', [AccountController::class, 'updateProfile'])->name('account.profile');
+    Route::put('account/password', [AccountController::class, 'updatePassword'])->name('account.password');
+
     // Islem gecmisi & loglar
     Route::get('trades', [TradeController::class, 'index'])->name('trades.index');
     Route::get('logs', [TradeController::class, 'logs'])->name('logs.index');
