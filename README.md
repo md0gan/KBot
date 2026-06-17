@@ -46,9 +46,9 @@ izni verin, **para çekme (withdraw) iznini kapatın**.
 
 Her coin için bir **pozisyon** tutulur:
 
-- **Sermaye (`cost_basis`)** — coine yatırdığınız ve hâlâ coinde duran kote (USDT) tutar.
+- **Sermaye (`cost_basis`)** — coine yatırdığınız ve hâlâ coinde duran kote (TRY) tutar.
 - **Miktar (`quantity`)** — botun tuttuğu coin adedi.
-- **Çevrilen kar (`realized_profit`)** — şimdiye kadar USDT'ye çevrilen toplam kar.
+- **Çevrilen kar (`realized_profit`)** — şimdiye kadar nakde (TRY) çevrilen toplam kar.
 
 ### 1) Düzenli Alım (DCA)
 
