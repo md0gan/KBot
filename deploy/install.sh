@@ -68,7 +68,7 @@ fi
 
 echo "==> Bagimliliklar yukleniyor (composer install, ${PHP_BIN})"
 cd "$APP_DIR"
-COMPOSER_BIN="$(command -v composer)"
+COMPOSER_BIN="$(command -v composer || echo /usr/local/bin/composer)"
 # Sistemin varsayilan 'php' surumu farkli olabilir (orn. 8.5); KBot icin acikca php8.3 kullan.
 "$PHP_BIN" "$COMPOSER_BIN" install --no-dev --optimize-autoloader --no-interaction
 
