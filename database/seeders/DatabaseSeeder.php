@@ -24,7 +24,7 @@ class DatabaseSeeder extends Seeder
         // Ayarlar (simulasyon modunda baslar)
         $user->settings()->update([
             'trading_mode' => 'simulation',
-            'default_quote' => 'USDT',
+            'default_quote' => 'TRY',
             'bot_enabled' => true,
         ]);
 
