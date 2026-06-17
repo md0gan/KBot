@@ -36,10 +36,10 @@ class DatabaseSeeder extends Seeder
 
         foreach ($samples as $s) {
             Coin::firstOrCreate(
-                ['user_id' => $user->id, 'symbol' => $s['base'].'_USDT'],
+                ['user_id' => $user->id, 'symbol' => $s['base'].'_TRY'],
                 [
                     'base_asset' => $s['base'],
-                    'quote_asset' => 'USDT',
+                    'quote_asset' => 'TRY',
                     'symbol_type' => 1,
                     'enabled' => false, // guvenlik icin kapali baslar; panelden acilir
                     'mode' => 'inherit',
