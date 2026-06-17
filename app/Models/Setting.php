@@ -19,11 +19,20 @@ class Setting extends Model
         'bot_enabled',
         'api_verified_at',
         'api_status',
+        'telegram_enabled',
+        'telegram_bot_token',
+        'telegram_chat_id',
+        'tg_notify_trades',
+        'tg_notify_errors',
+        'tg_notify_balance',
+        'low_balance_threshold',
+        'last_quote_balance',
     ];
 
     protected $hidden = [
         'api_key',
         'api_secret',
+        'telegram_bot_token',
     ];
 
     protected function casts(): array
