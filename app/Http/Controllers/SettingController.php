@@ -90,9 +90,18 @@ class SettingController extends Controller
     public function toggleMode(Request $request): RedirectResponse
     {
         $setting = $request->user()->settings();
-        $setting->trading_mode = $setting->trading_mode === 'live' ? 'simulation' : 'live';
+        $oldMode = $setting->trading_mode;
+        $setting->trading_mode = $oldMode === 'live' ? 'simulation' : 'live';
         $setting->save();
 
-        return back()->with('status', 'Genel islem modu: '.strtoupper($setting->trading_mode));
+        if ($oldMode === 'simulation' && $setting->trading_mode === 'live') {
+            $res = (new TradingBot($request->user()))->clearSimulationData();
+
+            return back()->with('status',
+                "Genel mod: CANLI. Simülasyon verileri temizlendi "
+                ."({$res['trades']} işlem, {$res['positions']} pozisyon).");
+        }
+
+        return back()->with('status', 'Genel işlem modu: '.strtoupper($setting->trading_mode));
     }
 }
