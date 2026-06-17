@@ -105,13 +105,40 @@ class TradingBot
             throw new BinanceTrException('Alim tutari 0 veya negatif olamaz.');
         }
 
+        // Kote para hassasiyetine yuvarla (orn. TRY = 2 hane)
+        $qp = $coin->quote_precision ?? 2;
+        $factor = 10 ** $qp;
+        $amount = floor($amount * $factor) / $factor;
+
         $mode = $coin->effectiveMode($this->globalMode());
+
+        // Guncel fiyat (hem on-kontrol hem simulasyon icin tek seferde)
+        $price = $this->client->getLastPrice($coin->symbol, $coin->symbol_type ?? 1);
+        if ($price <= 0) {
+            throw new BinanceTrException('Gecerli fiyat alinamadi.');
+        }
+
+        // Borsa minimumlari (sembol senkronu yapildiysa) - ham hata yerine dostane uyari
+        $estQty = $amount / $price;
+        if ($coin->min_notional && $amount < (float) $coin->min_notional) {
+            throw new BinanceTrException(
+                "Alim tutari {$amount} {$coin->quote_asset}, minimum islem tutarinin ".
+                "({$coin->min_notional} {$coin->quote_asset}) altinda. Tutari artirin."
+            );
+        }
+        if ($coin->min_qty && $estQty < (float) $coin->min_qty) {
+            $needed = ceil((float) $coin->min_qty * $price);
+            throw new BinanceTrException(
+                "Alim tutari cok dusuk: bu fiyatta ~".kb_qty($estQty)." {$coin->base_asset} ediyor ".
+                "(min {$coin->min_qty}). En az ~{$needed} {$coin->quote_asset} girin."
+            );
+        }
 
         if ($mode === 'live') {
             $fill = $this->client->marketBuyQuote($coin->symbol, $amount);
             $qty = (float) $fill['quantity'];
             $quote = (float) $fill['quote_amount'];
-            $price = (float) $fill['price'];
+            $price = (float) ($fill['price'] ?: $price);
             $status = $fill['status'];
             $orderId = $fill['order_id'] ?? null;
             $raw = $fill['raw'] ?? null;
@@ -120,11 +147,7 @@ class TradingBot
                 throw new BinanceTrException("Emir dolmadi (status: {$status}).");
             }
         } else {
-            // Simulasyon: guncel fiyattan al
-            $price = $this->client->getLastPrice($coin->symbol, $coin->symbol_type ?? 1);
-            if ($price <= 0) {
-                throw new BinanceTrException('Gecerli fiyat alinamadi.');
-            }
+            // Simulasyon: yukarida cekilen guncel fiyattan al
             $quote = $amount;
             $qty = $amount / $price;
             $status = 'SIMULATED';
