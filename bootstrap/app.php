@@ -12,7 +12,10 @@ return Application::configure(basePath: dirname(__DIR__))
         health: '/up',
     )
     ->withMiddleware(function (Middleware $middleware): void {
-        // Varsayilan web/auth middleware'leri framework tarafindan saglanir.
+        // Kurulu degilse /install'a yonlendiren kontrol (web grubuna eklenir).
+        $middleware->web(append: [
+            \App\Http\Middleware\CheckInstalled::class,
+        ]);
     })
     ->withSchedule(function (Schedule $schedule): void {
         // Vadesi gelen coinler icin duzenli alim (DCA). Komut kendi icinde
