@@ -162,7 +162,7 @@ else
 fi
 
 echo "==> Scheduler cron'u ekleniyor (www-data, tekrarsiz)"
-CRON_LINE="* * * * * cd ${APP_DIR} && php artisan schedule:run >> /dev/null 2>&1"
+CRON_LINE="* * * * * cd ${APP_DIR} && ${PHP_BIN} artisan schedule:run >> /dev/null 2>&1"
 # Idempotent: bu projeye ait eski satir (varsa) cikarilir, tek satir birakilir.
 # Yalnizca bu projenin dizinini iceren satirlar temizlenir; baska projelerin
 # cron'lari KORUNUR. Boylece script tekrar tekrar calistirilsa da cift satir olmaz.
