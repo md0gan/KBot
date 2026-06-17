@@ -116,13 +116,12 @@ class Coin extends Model
      */
     public function nextBuyAfter(Carbon $from): Carbon
     {
-        $hour = $this->buy_hour ?? 9;
-
+        // Saat hizalamasi yok: son alimdan itibaren tam bir periyot ekle.
         return match ($this->interval) {
             'hourly' => $from->copy()->addHour(),
-            'daily' => $from->copy()->addDay()->setTime($hour, 0),
-            'monthly' => $from->copy()->addMonthNoOverflow()->setTime($hour, 0),
-            default => $from->copy()->addWeek()->setTime($hour, 0), // weekly
+            'daily' => $from->copy()->addDay(),
+            'monthly' => $from->copy()->addMonthNoOverflow(),
+            default => $from->copy()->addWeek(), // weekly
         };
     }
 

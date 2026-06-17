@@ -33,15 +33,9 @@
                 <option value="{{ $k }}" @selected(old('interval', $coin->interval ?? 'weekly') === $k)>{{ $label }}</option>
             @endforeach
         </select>
-        <p class="text-xs text-slate-400 mt-1">Saatlik için saat alanı yok sayılır.</p>
+        <p class="text-xs text-slate-400 mt-1">Coin eklenince hemen ilk alım yapılır; sonra her periyotta (örn. haftalık → +1 hafta) tekrarlanır.</p>
     </div>
 
-    <div>
-        <label class="block text-sm font-medium text-slate-700 mb-1">Alım Saati (0-23)</label>
-        <input type="number" name="buy_hour" min="0" max="23"
-               value="{{ old('buy_hour', $coin->buy_hour ?? 9) }}"
-               class="w-full rounded-lg border-slate-300 focus:border-sky-500 focus:ring-sky-500">
-    </div>
     <div>
         <label class="block text-sm font-medium text-slate-700 mb-1">İşlem Modu</label>
         <select name="mode" class="w-full rounded-lg border-slate-300 focus:border-sky-500 focus:ring-sky-500">

@@ -36,14 +36,30 @@ class CoinController extends Controller
         $coin->symbol = $symbol;
         $coin->user_id = $request->user()->id;
         if ($coin->enabled) {
-            $coin->next_buy_at = now();
+            $coin->next_buy_at = now(); // hemen alima hazir
         }
         $coin->save();
 
         // Sembol filtrelerini dogrula/doldur (borsa public endpoint)
         $warning = $this->tryFillFilters($request, $coin);
 
-        $redirect = redirect()->route('coins.show', $coin)->with('status', "Coin eklendi: {$symbol}");
+        // Eklenir eklenmez ilk alimi dene (coin etkin + bot acik ise).
+        // Fiyat filtresi engellerse veya hata olursa zamanlayici tekrar dener.
+        $buyMsg = null;
+        if ($coin->enabled && $request->user()->settings()->bot_enabled) {
+            try {
+                $coin->refresh();
+                $trade = (new TradingBot($request->user()))->buy($coin, 'dca_buy');
+                $buyMsg = $trade
+                    ? "İlk alım yapıldı: {$trade->quantity} {$coin->base_asset}."
+                    : 'Fiyat üst limitin üzerinde; uygun fiyatta otomatik alınacak.';
+            } catch (\Throwable $e) {
+                $buyMsg = 'İlk alım şimdi yapılamadı ('.$e->getMessage().'); zamanlayıcı tekrar deneyecek.';
+            }
+        }
+
+        $redirect = redirect()->route('coins.show', $coin)
+            ->with('status', trim("Coin eklendi: {$symbol}. ".($buyMsg ?? '')));
 
         return $warning ? $redirect->with('warning', $warning) : $redirect;
     }
@@ -117,7 +133,6 @@ class CoinController extends Controller
             'enabled' => ['nullable', 'boolean'],
             'buy_amount' => ['required', 'numeric', 'min:0.00000001'],
             'interval' => ['required', 'in:hourly,daily,weekly,monthly'],
-            'buy_hour' => ['nullable', 'integer', 'min:0', 'max:23'],
             'profit_multiplier' => ['required', 'numeric', 'min:1.01'],
             'take_profit_strategy' => ['required', 'in:leave_capital,fixed_ratio'],
             'sell_ratio' => ['nullable', 'numeric', 'min:0.01', 'max:1'],
@@ -128,7 +143,6 @@ class CoinController extends Controller
         $validated['base_asset'] = strtoupper($validated['base_asset']);
         $validated['quote_asset'] = strtoupper($validated['quote_asset']);
         $validated['enabled'] = $request->boolean('enabled');
-        $validated['buy_hour'] = $validated['buy_hour'] ?? 9;
         $validated['sell_ratio'] = $validated['sell_ratio'] ?? 0.5;
 
         return $validated;
