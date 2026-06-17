@@ -1,12 +1,15 @@
 # KBot — Binance TR DCA & Kar-Al Botu
 
 Binance TR (`https://www.binance.tr`) üzerinde **düzenli alım (DCA)** yapan ve bir coin
-belirlenen **çarpana** ulaştığında **karı USDT'ye çevirip yalnızca sermayeyi coinde bırakan**
+belirlenen **çarpana** ulaştığında **karı nakde (kote para) çevirip yalnızca sermayeyi coinde bırakan**
 bir bottur. Tüm yönetim **web arayüzünden** yapılır.
 
-> **Örnek senaryo:** Her hafta düzenli **10 USDT** BTC al. BTC pozisyonunun değeri
+> Binance TR genelde **TRY** paritesi kullanır (örn. `BTC_TRY`), bu yüzden varsayılan kote para
+> birimi **TRY**'dir. İsterseniz coin başına `USDT` de seçebilirsiniz (parite mevcutsa).
+
+> **Örnek senaryo:** Her hafta düzenli **200 TRY** BTC al. BTC pozisyonunun değeri
 > sermayenin **2 katına** ulaşınca, **yarısını sat** ve geriye **sadece sermaye** kalsın;
-> kazanılan kısım USDT olarak cebe girsin.
+> kazanılan kısım TRY olarak cebe girsin.
 
 **Stack:** PHP 8.2+ · Laravel 12 · MySQL · Tailwind (CDN) · Çoklu kullanıcı.
 
