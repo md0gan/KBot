@@ -27,7 +27,7 @@
         </div>
         <div class="bg-white rounded-xl p-4 shadow-sm border border-slate-200">
             <div class="text-xs text-slate-500 uppercase tracking-wide">Güncel Değer</div>
-            <div class="text-2xl font-bold mt-1">{{ kb_money($currentValue) }} <span class="text-sm text-slate-400">USDT</span></div>
+            <div class="text-2xl font-bold mt-1">{{ kb_money($currentValue) }} <span class="text-sm text-slate-400">{{ $setting->default_quote }}</span></div>
         </div>
         <div class="bg-white rounded-xl p-4 shadow-sm border border-slate-200">
             <div class="text-xs text-slate-500 uppercase tracking-wide">Açık K/Z</div>
@@ -36,7 +36,7 @@
             </div>
         </div>
         <div class="bg-white rounded-xl p-4 shadow-sm border border-slate-200">
-            <div class="text-xs text-slate-500 uppercase tracking-wide">USDT'ye Çevrilen Kar</div>
+            <div class="text-xs text-slate-500 uppercase tracking-wide">Çevrilen Kar ({{ $setting->default_quote }})</div>
             <div class="text-2xl font-bold mt-1 text-emerald-600">+{{ kb_money($realized) }}</div>
         </div>
     </div>
