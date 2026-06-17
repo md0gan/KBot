@@ -78,6 +78,17 @@
     </div>
 
     <div class="md:col-span-2">
+        <label class="block text-sm font-medium text-slate-700 mb-1">Maksimum Alım Fiyatı (opsiyonel)</label>
+        <div class="flex md:w-1/2">
+            <input type="number" name="max_buy_price" step="0.00000001" min="0"
+                   value="{{ old('max_buy_price', $coin->max_buy_price ?? '') }}"
+                   class="w-full rounded-l-lg border-slate-300 focus:border-sky-500 focus:ring-sky-500">
+            <span class="inline-flex items-center px-3 rounded-r-lg border border-l-0 border-slate-300 bg-slate-50 text-slate-500 text-sm">{{ $quoteDefault }}</span>
+        </div>
+        <p class="text-xs text-slate-400 mt-1">Doldurulursa: güncel fiyat bu değerin <strong>üzerindeyse</strong> zamanlanmış alım yapılmaz (dip beklenir). Boş = filtre yok. Manuel "Al" bunu yok sayar.</p>
+    </div>
+
+    <div class="md:col-span-2">
         <label class="block text-sm font-medium text-slate-700 mb-1">Not (opsiyonel)</label>
         <textarea name="notes" rows="2" class="w-full rounded-lg border-slate-300 focus:border-sky-500 focus:ring-sky-500">{{ old('notes', $coin->notes ?? '') }}</textarea>
     </div>

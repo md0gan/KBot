@@ -62,7 +62,11 @@ class TradingBot
         foreach ($this->user->coins()->due()->get() as $coin) {
             try {
                 $trade = $this->buy($coin, 'dca_buy');
-                $results[] = "[ALIM] {$coin->symbol}: {$trade->quantity} @ {$trade->price} = {$trade->quote_amount} {$coin->quote_asset} ({$trade->mode})";
+                if ($trade) {
+                    $results[] = "[ALIM] {$coin->symbol}: {$trade->quantity} @ {$trade->price} = {$trade->quote_amount} {$coin->quote_asset} ({$trade->mode})";
+                } else {
+                    $results[] = "[BEKLE] {$coin->symbol}: fiyat üst limitin üzerinde, alım atlandı.";
+                }
             } catch (\Throwable $e) {
                 $this->log('error', 'dca_buy_failed', "{$coin->symbol} alim hatasi: ".$e->getMessage(), $coin);
                 $this->notifyError("{$coin->symbol} alım hatası: ".$e->getMessage());
@@ -102,7 +106,7 @@ class TradingBot
      | Alim (DCA / manuel)
      * ==================================================================== */
 
-    public function buy(Coin $coin, string $kind = 'dca_buy', ?float $amount = null): Trade
+    public function buy(Coin $coin, string $kind = 'dca_buy', ?float $amount = null): ?Trade
     {
         $amount = $amount ?? (float) $coin->buy_amount;
         if ($amount <= 0) {
@@ -120,6 +124,18 @@ class TradingBot
         $price = $this->client->getLastPrice($coin->symbol, $coin->symbol_type ?? 1);
         if ($price <= 0) {
             throw new BinanceTrException('Gecerli fiyat alinamadi.');
+        }
+
+        // Fiyat filtresi: yalnizca ZAMANLANMIS alimda gecerli. Fiyat ust limitin
+        // uzerindeyse alimi atla ve next_buy_at'e dokunma; boylece dip gelince
+        // sonraki scheduler turunda alim yapilir. Manuel "Al" bu filtreyi yok sayar.
+        if ($kind === 'dca_buy' && $coin->max_buy_price && $price > (float) $coin->max_buy_price) {
+            $this->log('info', 'price_filter',
+                "{$coin->symbol}: fiyat ".kb_price($price)." > limit ".kb_price($coin->max_buy_price).", alim atlandi.",
+                $coin
+            );
+
+            return null;
         }
 
         // Borsa minimumlari (sembol senkronu yapildiysa) - ham hata yerine dostane uyari

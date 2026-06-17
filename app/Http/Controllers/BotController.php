@@ -16,6 +16,10 @@ class BotController extends Controller
         try {
             $trade = (new TradingBot($request->user()))->buy($coin, 'manual_buy');
 
+            if (! $trade) {
+                return back()->with('error', 'Alım yapılamadı.');
+            }
+
             return back()->with('status', "Alim yapildi: {$trade->quantity} {$coin->base_asset} @ {$trade->price} ({$trade->mode})");
         } catch (\Throwable $e) {
             return back()->with('error', 'Alim hatasi: '.$e->getMessage());

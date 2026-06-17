@@ -56,6 +56,10 @@ Her periyotta (saatlik / günlük / haftalık / aylık) sabit kote tutar kadar *
 yapılır. Binance TR'de MARKET alım `quoteOrderQty` ile yapıldığından "tam 200 TRY harca"
 mümkündür. Alım sonrası sermaye ve miktar büyür.
 
+**Fiyat filtresi (opsiyonel):** Coin için **Maksimum Alım Fiyatı** belirlerseniz, zamanlanmış alım
+yalnızca güncel fiyat bu değerin **altındayken** yapılır. Fiyat üstündeyse o tur atlanır (sonraki
+alıma ertelenmez; dip gelince ilk fırsatta alınır). Manuel **"Al"** bu filtreyi yok sayar.
+
 ### 2) Kar-Al (Take-Profit)
 
 Pozisyonun güncel değeri **≥ çarpan × sermaye** olunca tetiklenir:

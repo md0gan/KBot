@@ -88,6 +88,9 @@
                     @if ($coin->take_profit_strategy === 'fixed_ratio')
                         <div class="flex justify-between"><dt class="text-slate-500">Satış oranı</dt><dd>%{{ kb_money($coin->sell_ratio * 100, 0) }}</dd></div>
                     @endif
+                    @if ($coin->max_buy_price)
+                        <div class="flex justify-between"><dt class="text-slate-500">Maks. alım fiyatı</dt><dd>{{ kb_price($coin->max_buy_price) }} {{ $coin->quote_asset }}</dd></div>
+                    @endif
                     <div class="flex justify-between"><dt class="text-slate-500">Sonraki alım</dt><dd>{{ $coin->next_buy_at?->format('d.m.Y H:i') ?? '—' }}</dd></div>
                     <div class="flex justify-between"><dt class="text-slate-500">Min. lot / notional</dt><dd>{{ $coin->step_size ? kb_qty($coin->step_size) : '—' }} / {{ $coin->min_notional ? kb_money($coin->min_notional) : '—' }}</dd></div>
                 </dl>

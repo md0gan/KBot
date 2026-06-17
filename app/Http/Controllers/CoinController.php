@@ -121,6 +121,7 @@ class CoinController extends Controller
             'profit_multiplier' => ['required', 'numeric', 'min:1.01'],
             'take_profit_strategy' => ['required', 'in:leave_capital,fixed_ratio'],
             'sell_ratio' => ['nullable', 'numeric', 'min:0.01', 'max:1'],
+            'max_buy_price' => ['nullable', 'numeric', 'min:0'],
             'notes' => ['nullable', 'string', 'max:1000'],
         ]);
 
