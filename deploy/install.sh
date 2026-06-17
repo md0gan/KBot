@@ -109,9 +109,14 @@ systemctl restart nginx
 systemctl enable "php${PHP_VER}-fpm" >/dev/null 2>&1 || true
 systemctl restart "php${PHP_VER}-fpm"
 
-echo "==> Scheduler cron'u ekleniyor (www-data)"
+echo "==> Scheduler cron'u ekleniyor (www-data, tekrarsiz)"
 CRON_LINE="* * * * * cd ${APP_DIR} && php artisan schedule:run >> /dev/null 2>&1"
-( crontab -u www-data -l 2>/dev/null | grep -v 'artisan schedule:run' ; echo "$CRON_LINE" ) | crontab -u www-data -
+# Idempotent: bu projeye ait eski satir (varsa) cikarilir, tek satir birakilir.
+# Yalnizca bu projenin dizinini iceren satirlar temizlenir; baska projelerin
+# cron'lari KORUNUR. Boylece script tekrar tekrar calistirilsa da cift satir olmaz.
+EXISTING_CRON="$(crontab -u www-data -l 2>/dev/null || true)"
+FILTERED_CRON="$(printf '%s\n' "$EXISTING_CRON" | grep -vF "$APP_DIR" || true)"
+printf '%s\n%s\n' "$FILTERED_CRON" "$CRON_LINE" | grep -v '^[[:space:]]*$' | crontab -u www-data -
 
 IP_ADDR="$(hostname -I 2>/dev/null | awk '{print $1}')"
 echo ""
