@@ -49,6 +49,15 @@ class SettingController extends Controller
         $setting->bot_enabled = $request->boolean('bot_enabled');
         $setting->save();
 
+        // Simulasyondan canliya gecildiyse simulasyon verilerini temizle
+        if ($oldMode === 'simulation' && $setting->trading_mode === 'live') {
+            $res = (new TradingBot($request->user()))->clearSimulationData();
+
+            return redirect()->route('settings.edit')->with('status',
+                "Ayarlar kaydedildi. CANLI moda geçildi; simülasyon verileri temizlendi "
+                ."({$res['trades']} işlem silindi, {$res['positions']} pozisyon sıfırlandı).");
+        }
+
         return redirect()->route('settings.edit')->with('status', 'Ayarlar kaydedildi.');
     }
 
