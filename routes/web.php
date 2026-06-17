@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\AccountController;
 use App\Http\Controllers\Auth\AuthController;
 use App\Http\Controllers\BotController;
 use App\Http\Controllers\CoinController;
