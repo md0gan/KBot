@@ -40,7 +40,7 @@ class AccountController extends Controller
         ]);
 
         $request->user()->update([
-            'password' => Hash::make($request->string('password')),
+            'password' => Hash::make($request->input('password')),
         ]);
 
         return redirect()->route('account.edit')->with('status', 'Şifreniz değiştirildi.');
