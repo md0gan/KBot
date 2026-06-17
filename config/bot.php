@@ -48,7 +48,7 @@ return [
     ],
 
     'take_profit_strategies' => [
-        'leave_capital' => 'Sermayeyi birak, karin tamamini USDT yap',
+        'leave_capital' => 'Sermayeyi birak, karin tamamini nakde cevir',
         'fixed_ratio' => 'Sabit oranda sat (deger yuzdesi)',
     ],
 
