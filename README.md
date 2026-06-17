@@ -182,6 +182,9 @@ Anahtarlar veritabanında `APP_KEY` ile **şifrelenerek** saklanır.
   - *Canlı* — sadece bu coin gerçek emir
 - **Manuel işlemler:** Coin detayında "Şimdi al", "Değerlendir", "Sat / Tümünü sat".
 - **Takip:** İşlem geçmişi (filtreli) ve bot günlüğü ile tüm hareketleri izleyin.
+- **Hesap:** Hesap sayfasından ad/e-posta ve şifrenizi değiştirebilirsiniz.
+- **Canlıya geçiş:** Genel modu *Canlı* yaptığınızda simülasyon işlemleri ve tüm pozisyonlar
+  otomatik **sıfırlanır** (temiz başlangıç). Ayarlar sayfasında onay sorulur.
 
 ---
 
