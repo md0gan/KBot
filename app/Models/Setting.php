@@ -41,8 +41,15 @@ class Setting extends Model
             // API anahtarlari veritabaninda sifreli saklanir (APP_KEY ile).
             'api_key' => 'encrypted',
             'api_secret' => 'encrypted',
+            'telegram_bot_token' => 'encrypted',
             'recv_window' => 'integer',
             'bot_enabled' => 'boolean',
+            'telegram_enabled' => 'boolean',
+            'tg_notify_trades' => 'boolean',
+            'tg_notify_errors' => 'boolean',
+            'tg_notify_balance' => 'boolean',
+            'low_balance_threshold' => 'float',
+            'last_quote_balance' => 'float',
             'api_verified_at' => 'datetime',
         ];
     }
