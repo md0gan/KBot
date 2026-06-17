@@ -21,7 +21,7 @@
                         <span class="text-brand">K</span>Bot
                     </a>
                     <div class="hidden md:flex items-center gap-1 text-sm">
-                        @php($nav = ['dashboard' => 'Panel', 'coins.index' => 'Coinler', 'trades.index' => 'İşlemler', 'logs.index' => 'Loglar', 'settings.edit' => 'Ayarlar'])
+                        @php($nav = ['dashboard' => 'Panel', 'coins.index' => 'Coinler', 'trades.index' => 'İşlemler', 'logs.index' => 'Loglar', 'settings.edit' => 'Ayarlar', 'account.edit' => 'Hesap'])
                         @foreach ($nav as $route => $label)
                             <a href="{{ route($route) }}"
                                class="px-3 py-2 rounded-md hover:bg-slate-800 {{ request()->routeIs($route) || request()->routeIs(str_replace('.index','.*', $route)) ? 'bg-slate-800 text-white' : 'text-slate-300' }}">
