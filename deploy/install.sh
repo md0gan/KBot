@@ -28,6 +28,21 @@ if [[ "${EUID}" -ne 0 ]]; then
     exit 1
 fi
 
+# Konum uyarisi: /home veya /root altinda Nginx (www-data) erisemeyebilir (403).
+case "$APP_DIR" in
+    /home/*|/root/*)
+        echo ""
+        echo "!!! UYARI: Proje '$APP_DIR' altinda."
+        echo "    Nginx (www-data) bu dizine erisemeyebilir ve 403 alabilirsiniz."
+        echo "    Onerilen: projeyi /var/www altina klonlayin:"
+        echo "      cd /var/www && sudo git clone https://github.com/md0gan/KBot.git kbot && cd kbot"
+        echo "      sudo DOMAIN=${DOMAIN} bash deploy/install.sh"
+        echo ""
+        echo "    Yine de buraya kurmak icin 8 saniye icinde bir sey yapmayin (Ctrl+C = iptal)..."
+        sleep 8
+        ;;
+esac
+
 export DEBIAN_FRONTEND=noninteractive
 
 echo "==> Paketler kuruluyor (PHP $PHP_VER, Nginx, araclar)"
