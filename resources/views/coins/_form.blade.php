@@ -11,7 +11,7 @@
     <div>
         <label class="block text-sm font-medium text-slate-700 mb-1">Karşı Para (Quote)</label>
         <input type="text" name="quote_asset" required
-               value="{{ old('quote_asset', $coin->quote_asset ?? config('bot.default_quote', 'TRY')) }}"
+               value="{{ $quoteDefault }}"
                class="w-full rounded-lg border-slate-300 uppercase focus:border-sky-500 focus:ring-sky-500">
         <p class="text-xs text-slate-400 mt-1">Binance TR'de genelde <strong>TRY</strong> (örn. BTC_TRY). Bazı paritelerde USDT olabilir.</p>
     </div>
