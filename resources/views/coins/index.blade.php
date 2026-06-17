@@ -19,7 +19,7 @@
                         <th class="text-right font-medium px-4 py-2">Çarpan</th>
                         <th class="text-right font-medium px-4 py-2">Sermaye</th>
                         <th class="text-right font-medium px-4 py-2">Değer</th>
-                        <th class="text-right font-medium px-4 py-2">Kar (USDT)</th>
+                        <th class="text-right font-medium px-4 py-2">Çevrilen Kar</th>
                         <th class="text-left font-medium px-4 py-2">Sonraki alım</th>
                         <th class="px-4 py-2"></th>
                     </tr>
