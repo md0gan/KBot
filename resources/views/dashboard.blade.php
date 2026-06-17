@@ -23,7 +23,7 @@
     <div class="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
         <div class="bg-white rounded-xl p-4 shadow-sm border border-slate-200">
             <div class="text-xs text-slate-500 uppercase tracking-wide">Yatırılan Sermaye</div>
-            <div class="text-2xl font-bold mt-1">{{ kb_money($invested) }} <span class="text-sm text-slate-400">USDT</span></div>
+            <div class="text-2xl font-bold mt-1">{{ kb_money($invested) }} <span class="text-sm text-slate-400">{{ $setting->default_quote }}</span></div>
         </div>
         <div class="bg-white rounded-xl p-4 shadow-sm border border-slate-200">
             <div class="text-xs text-slate-500 uppercase tracking-wide">Güncel Değer</div>
