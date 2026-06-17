@@ -409,6 +409,50 @@ class TradingBot
     }
 
     /* ======================================================================
+     | Simulasyon verisini temizleme (canliya gecince temiz baslangic)
+     * ==================================================================== */
+
+    /**
+     * Simulasyon islemlerini siler ve TUM pozisyonlari sifirlar.
+     * Canliya gecişte temiz baslangic icin kullanilir.
+     *
+     * @return array{trades:int, positions:int}
+     */
+    public function clearSimulationData(): array
+    {
+        return DB::transaction(function () {
+            $coinIds = $this->user->coins()->pluck('id');
+
+            // 1) Simulasyon islem kayitlarini sil
+            $deletedTrades = Trade::where('user_id', $this->user->id)
+                ->where('mode', 'simulation')
+                ->delete();
+
+            // 2) Tum pozisyonlari sifirla (miktar/sermaye/kar)
+            $resetPositions = Position::whereIn('coin_id', $coinIds)->update([
+                'quantity' => 0,
+                'cost_basis' => 0,
+                'avg_price' => 0,
+                'realized_profit' => 0,
+                'last_value' => 0,
+                'profit_takes_count' => 0,
+            ]);
+
+            // 3) Alim zamanlamasini temiz baslat
+            $this->user->coins()->update(['last_buy_at' => null]);
+            $this->user->coins()->where('enabled', true)->update(['next_buy_at' => now()]);
+            $this->user->coins()->where('enabled', false)->update(['next_buy_at' => null]);
+
+            $this->log('warning', 'mode_switch', 'Canliya gecis: simulasyon verileri temizlendi.', null, [
+                'deleted_trades' => $deletedTrades,
+                'reset_positions' => $resetPositions,
+            ]);
+
+            return ['trades' => (int) $deletedTrades, 'positions' => (int) $resetPositions];
+        });
+    }
+
+    /* ======================================================================
      | Sembol senkronu (filtreler + dogrulama)
      * ==================================================================== */
 
