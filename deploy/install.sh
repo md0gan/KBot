@@ -128,6 +128,36 @@ systemctl restart nginx
 systemctl enable "php${PHP_VER}-fpm" >/dev/null 2>&1 || true
 systemctl restart "php${PHP_VER}-fpm"
 
+echo "==> SSL sertifikasi (Let's Encrypt / Certbot)"
+SSL_OK=0
+if [[ "$DOMAIN" != "_" ]]; then
+    apt-get install -y certbot python3-certbot-nginx
+
+    # ufw aktifse HTTPS portunu ac
+    if command -v ufw >/dev/null 2>&1 && ufw status 2>/dev/null | grep -q "Status: active"; then
+        ufw allow 'Nginx Full' || true
+    fi
+
+    # E-posta verildiyse kullan, yoksa e-postasiz kayit
+    if [[ -n "$EMAIL" ]]; then
+        CERTBOT_REG=(-m "$EMAIL")
+    else
+        CERTBOT_REG=(--register-unsafely-without-email)
+    fi
+
+    if certbot --nginx -d "$DOMAIN" --non-interactive --agree-tos --redirect "${CERTBOT_REG[@]}"; then
+        SSL_OK=1
+        echo "    SSL kuruldu. HTTP -> HTTPS yonlendirmesi aktif. Otomatik yenileme: certbot.timer"
+    else
+        echo "    !!! SSL ALINAMADI. Olasi sebep: DNS henuz '$DOMAIN' -> sunucu IP'sine bakmiyor"
+        echo "        ya da 80/443 disaridan erisilebilir degil. HTTP site yine de calisir."
+        echo "        DNS hazir oldugunda sunu calistirin:"
+        echo "          sudo certbot --nginx -d $DOMAIN --redirect"
+    fi
+else
+    echo "    DOMAIN verilmedigi icin SSL atlandi. HTTPS icin: sudo DOMAIN=alan.adi EMAIL=eposta bash deploy/install.sh"
+fi
+
 echo "==> Scheduler cron'u ekleniyor (www-data, tekrarsiz)"
 CRON_LINE="* * * * * cd ${APP_DIR} && php artisan schedule:run >> /dev/null 2>&1"
 # Idempotent: bu projeye ait eski satir (varsa) cikarilir, tek satir birakilir.
