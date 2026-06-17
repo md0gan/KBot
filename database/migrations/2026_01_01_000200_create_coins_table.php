@@ -14,8 +14,8 @@ return new class extends Migration
 
             // Sembol tanimi
             $table->string('base_asset', 32);              // BTC
-            $table->string('quote_asset', 16)->default('USDT'); // USDT
-            $table->string('symbol', 48);                  // BTC_USDT
+            $table->string('quote_asset', 16)->default('TRY'); // TRY (Binance TR)
+            $table->string('symbol', 48);                  // orn. BTC_TRY
             $table->unsignedTinyInteger('symbol_type')->default(1); // 1=MAIN, 2=NEXT
 
             // Durum / mod
