@@ -22,7 +22,7 @@
             <input type="number" name="buy_amount" step="0.00000001" min="0" required
                    value="{{ old('buy_amount', $coin->buy_amount ?? config('bot.default_buy_amount', 10)) }}"
                    class="w-full rounded-l-lg border-slate-300 focus:border-sky-500 focus:ring-sky-500">
-            <span class="inline-flex items-center px-3 rounded-r-lg border border-l-0 border-slate-300 bg-slate-50 text-slate-500 text-sm">{{ old('quote_asset', $coin->quote_asset ?? config('bot.default_quote', 'TRY')) }}</span>
+            <span class="inline-flex items-center px-3 rounded-r-lg border border-l-0 border-slate-300 bg-slate-50 text-slate-500 text-sm">{{ $quoteDefault }}</span>
         </div>
         <p class="text-xs text-slate-400 mt-1">Örn. her hafta 200 TRY (min. işlem tutarının üzerinde olmalı)</p>
     </div>
