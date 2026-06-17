@@ -140,7 +140,7 @@ class CoinController extends Controller
             $bot = new TradingBot($request->user());
             $meta = $bot->lookupSymbol($coin->symbol);
             if (! $meta) {
-                return "Uyari: {$coin->symbol} borsada bulunamadi. Sembolu kontrol edin (orn. BTC + USDT).";
+                return "Uyari: {$coin->symbol} borsada bulunamadi. Sembolu kontrol edin (orn. BTC + TRY).";
             }
             $bot->syncSymbols();
 
