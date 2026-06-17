@@ -132,9 +132,13 @@ systemctl restart nginx
 systemctl enable "php${PHP_VER}-fpm" >/dev/null 2>&1 || true
 systemctl restart "php${PHP_VER}-fpm"
 
-echo "==> SSL sertifikasi (Let's Encrypt / Certbot)"
+echo "==> SSL sertifikasi"
 SSL_OK=0
-if [[ "$DOMAIN" != "_" ]]; then
+if [[ "$CLOUDFLARE" == "1" ]]; then
+    echo "    Cloudflare modu (CLOUDFLARE=1): certbot atlandi."
+    echo "    Kurulumdan sonra Origin sertifikasi icin:"
+    echo "      sudo DOMAIN=${DOMAIN} bash deploy/cloudflare-ssl.sh"
+elif [[ "$DOMAIN" != "_" ]]; then
     apt-get install -y certbot python3-certbot-nginx
 
     # ufw aktifse HTTPS portunu ac
