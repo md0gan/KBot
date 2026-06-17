@@ -53,7 +53,7 @@ Her coin için bir **pozisyon** tutulur:
 ### 1) Düzenli Alım (DCA)
 
 Her periyotta (saatlik / günlük / haftalık / aylık) sabit kote tutar kadar **MARKET alım**
-yapılır. Binance TR'de MARKET alım `quoteOrderQty` ile yapıldığından "tam 10 USDT harca"
+yapılır. Binance TR'de MARKET alım `quoteOrderQty` ile yapıldığından "tam 200 TRY harca"
 mümkündür. Alım sonrası sermaye ve miktar büyür.
 
 ### 2) Kar-Al (Take-Profit)
