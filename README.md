@@ -71,11 +71,11 @@ böylece bir sonraki kar-al aynı çarpanla tekrar tetiklenir.
 **Örnek (çarpan = 2, "sermayeyi bırak"):**
 
 ```
-Başlangıç: 10 USDT ile BTC alındı  → sermaye = 10, değer = 10  (1.0x)
-Fiyat 2 katına çıktı               → değer = 20             (2.0x) → TETİK
-Satılan: değer − sermaye = 10 USDT (pozisyonun yarısı)
-Sonuç:   coinde 10 USDT'lik BTC kaldı (sermaye) + 10 USDT kar cebe (realized_profit)
-Yeni durum: sermaye = 10, değer = 10 (1.0x) → döngü baştan
+Başlangıç: 200 TRY ile BTC alındı  → sermaye = 200, değer = 200  (1.0x)
+Fiyat 2 katına çıktı               → değer = 400               (2.0x) → TETİK
+Satılan: değer − sermaye = 200 TRY (pozisyonun yarısı)
+Sonuç:   coinde 200 TRY'lik BTC kaldı (sermaye) + 200 TRY kar cebe (realized_profit)
+Yeni durum: sermaye = 200, değer = 200 (1.0x) → döngü baştan
 ```
 
 > Düzenli alımlar devam ettikçe sermaye büyür; kar-al her zaman **o anki sermayeye** göre hesaplanır.
