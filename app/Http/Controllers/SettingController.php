@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Services\BinanceTrClient;
+use App\Services\TelegramNotifier;
 use App\Services\TradingBot;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -31,6 +32,13 @@ class SettingController extends Controller
             'default_quote' => ['required', 'string', 'max:16'],
             'trading_mode' => ['required', 'in:simulation,live'],
             'bot_enabled' => ['nullable', 'boolean'],
+            'telegram_enabled' => ['nullable', 'boolean'],
+            'telegram_bot_token' => ['nullable', 'string', 'max:255'],
+            'telegram_chat_id' => ['nullable', 'string', 'max:64'],
+            'tg_notify_trades' => ['nullable', 'boolean'],
+            'tg_notify_errors' => ['nullable', 'boolean'],
+            'tg_notify_balance' => ['nullable', 'boolean'],
+            'low_balance_threshold' => ['nullable', 'numeric', 'min:0'],
         ]);
 
         // API anahtarlari sadece doldurulduysa guncellenir
@@ -41,12 +49,23 @@ class SettingController extends Controller
             $setting->api_secret = trim($data['api_secret']);
         }
 
+        // Telegram bot token sadece doldurulduysa guncellenir
+        if (filled($data['telegram_bot_token'] ?? null)) {
+            $setting->telegram_bot_token = trim($data['telegram_bot_token']);
+        }
+
         $setting->base_url = $data['base_url'] ?: null;
         $setting->market_base_url = $data['market_base_url'] ?: null;
         $setting->recv_window = $data['recv_window'];
         $setting->default_quote = strtoupper($data['default_quote']);
         $setting->trading_mode = $data['trading_mode'];
         $setting->bot_enabled = $request->boolean('bot_enabled');
+        $setting->telegram_enabled = $request->boolean('telegram_enabled');
+        $setting->telegram_chat_id = $data['telegram_chat_id'] ?: null;
+        $setting->tg_notify_trades = $request->boolean('tg_notify_trades');
+        $setting->tg_notify_errors = $request->boolean('tg_notify_errors');
+        $setting->tg_notify_balance = $request->boolean('tg_notify_balance');
+        $setting->low_balance_threshold = $data['low_balance_threshold'] ?: null;
         $setting->save();
 
         // Simulasyondan canliya gecildiyse simulasyon verilerini temizle
@@ -85,6 +104,21 @@ class SettingController extends Controller
 
             return back()->with('error', 'Baglanti hatasi: '.$e->getMessage());
         }
+    }
+
+    public function testTelegram(Request $request): RedirectResponse
+    {
+        $setting = $request->user()->settings();
+
+        if (! filled($setting->telegram_bot_token) || ! filled($setting->telegram_chat_id)) {
+            return back()->with('error', 'Önce Telegram bot token ve chat ID girip kaydedin.');
+        }
+
+        $ok = TelegramNotifier::fromSetting($setting)->sendTest();
+
+        return $ok
+            ? back()->with('status', 'Telegram test mesajı gönderildi. Sohbeti kontrol edin.')
+            : back()->with('error', 'Telegram mesajı gönderilemedi. Token/Chat ID ve botu (botla en az bir kez konuştuğunuzu) kontrol edin.');
     }
 
     public function toggleMode(Request $request): RedirectResponse

@@ -27,6 +27,9 @@ return Application::configure(basePath: dirname(__DIR__))
 
         // Sembol filtrelerini (lot/step/minNotional) gunde bir guncelle.
         $schedule->command('bot:sync-symbols')->dailyAt('03:00');
+
+        // Canli bakiyeyi saatlik kontrol et (azalma/dusuk bakiye Telegram bildirimi).
+        $schedule->command('bot:balance-check')->hourly()->withoutOverlapping();
     })
     ->withExceptions(function (Exceptions $exceptions): void {
         //

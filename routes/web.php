@@ -64,6 +64,7 @@ Route::middleware('auth')->group(function () {
     Route::get('settings', [SettingController::class, 'edit'])->name('settings.edit');
     Route::put('settings', [SettingController::class, 'update'])->name('settings.update');
     Route::post('settings/test', [SettingController::class, 'test'])->name('settings.test');
+    Route::post('settings/telegram-test', [SettingController::class, 'testTelegram'])->name('settings.telegram-test');
     Route::post('settings/mode', [SettingController::class, 'toggleMode'])->name('settings.mode');
 
     // Hesap / sifre

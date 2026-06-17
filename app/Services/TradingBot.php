@@ -65,6 +65,7 @@ class TradingBot
                 $results[] = "[ALIM] {$coin->symbol}: {$trade->quantity} @ {$trade->price} = {$trade->quote_amount} {$coin->quote_asset} ({$trade->mode})";
             } catch (\Throwable $e) {
                 $this->log('error', 'dca_buy_failed', "{$coin->symbol} alim hatasi: ".$e->getMessage(), $coin);
+                $this->notifyError("{$coin->symbol} alım hatası: ".$e->getMessage());
                 $results[] = "[HATA] {$coin->symbol}: ".$e->getMessage();
             }
         }
@@ -89,6 +90,7 @@ class TradingBot
                 }
             } catch (\Throwable $e) {
                 $this->log('error', 'evaluate_failed', "{$coin->symbol} degerlendirme hatasi: ".$e->getMessage(), $coin);
+                $this->notifyError("{$coin->symbol} değerlendirme hatası: ".$e->getMessage());
                 $results[] = "[HATA] {$coin->symbol}: ".$e->getMessage();
             }
         }
@@ -160,7 +162,7 @@ class TradingBot
         // Pozisyon kaydini kilit oncesi olustur (kilit altinda INSERT yarisini onler)
         $coin->position()->firstOrCreate([]);
 
-        return DB::transaction(function () use ($coin, $kind, $mode, $qty, $quote, $price, $status, $orderId, $raw) {
+        $trade = DB::transaction(function () use ($coin, $kind, $mode, $qty, $quote, $price, $status, $orderId, $raw) {
             $pos = $coin->position()->lockForUpdate()->first();
 
             $pos->quantity += $qty;
@@ -199,6 +201,10 @@ class TradingBot
 
             return $trade;
         });
+
+        $this->notifyTrade($coin, $trade);
+
+        return $trade;
     }
 
     /* ======================================================================
@@ -294,7 +300,7 @@ class TradingBot
             $raw = null;
         }
 
-        return DB::transaction(function () use ($coin, $pos, $soldQty, $proceeds, $execPrice, $status, $orderId, $raw, $mode) {
+        $trade = DB::transaction(function () use ($coin, $pos, $soldQty, $proceeds, $execPrice, $status, $orderId, $raw, $mode) {
             $locked = $coin->position()->lockForUpdate()->first();
 
             $locked->quantity = max(0, $locked->quantity - $soldQty);
@@ -335,6 +341,10 @@ class TradingBot
 
             return $trade;
         });
+
+        $this->notifyTrade($coin, $trade);
+
+        return $trade;
     }
 
     /* ======================================================================
@@ -371,7 +381,7 @@ class TradingBot
             $raw = null;
         }
 
-        return DB::transaction(function () use ($coin, $soldQty, $proceeds, $execPrice, $status, $orderId, $raw, $mode) {
+        $trade = DB::transaction(function () use ($coin, $soldQty, $proceeds, $execPrice, $status, $orderId, $raw, $mode) {
             $locked = $coin->position()->lockForUpdate()->first();
             $soldShare = $locked->quantity > 0 ? min(1.0, $soldQty / $locked->quantity) : 0;
             $costOfSold = $locked->cost_basis * $soldShare;
@@ -407,6 +417,10 @@ class TradingBot
 
             return $trade;
         });
+
+        $this->notifyTrade($coin, $trade);
+
+        return $trade;
     }
 
     /* ======================================================================
@@ -556,6 +570,86 @@ class TradingBot
         }
 
         return $qty;
+    }
+
+    /* ======================================================================
+     | Telegram bildirimleri + bakiye takibi
+     * ==================================================================== */
+
+    public function notifier(): TelegramNotifier
+    {
+        return $this->notifier;
+    }
+
+    protected function notifyTrade(Coin $coin, Trade $trade): void
+    {
+        if (! $this->notifier->notifyTrades) {
+            return;
+        }
+
+        $emoji = $trade->side === 'BUY' ? '🟢' : '💰';
+        $modeLabel = $trade->mode === 'live' ? 'CANLI' : 'sim';
+
+        $lines = [
+            "{$emoji} {$trade->kindLabel()} — {$coin->symbol} ({$modeLabel})",
+            "Miktar: ".kb_qty($trade->quantity)." {$coin->base_asset}",
+            "Fiyat: ".kb_price($trade->price)." {$coin->quote_asset}",
+            "Tutar: ".kb_money($trade->quote_amount)." {$coin->quote_asset}",
+        ];
+
+        if ($trade->realized_profit > 0) {
+            $lines[] = "Kâr: +".kb_money($trade->realized_profit)." {$coin->quote_asset}";
+        }
+
+        $this->notifier->send(implode("\n", $lines));
+    }
+
+    protected function notifyError(string $message): void
+    {
+        if ($this->notifier->notifyErrors) {
+            $this->notifier->send("⚠️ Hata — {$message}");
+        }
+    }
+
+    /**
+     * Canli moddaki kote (orn. TRY) bakiyesini kontrol eder; azaldiysa veya
+     * esigin altina dustuyse Telegram'dan bilgilendirir.
+     */
+    public function checkBalance(): ?array
+    {
+        if (! $this->client->hasCredentials()) {
+            return null; // canli anahtar yok; bakiye okunamaz
+        }
+
+        $quote = $this->setting->default_quote ?: 'TRY';
+
+        try {
+            $bal = $this->client->getAssetBalance($quote);
+        } catch (\Throwable $e) {
+            return null;
+        }
+
+        $free = (float) ($bal['free'] ?? 0);
+        $last = $this->setting->last_quote_balance;
+        $threshold = $this->setting->low_balance_threshold;
+
+        $msgs = [];
+        if ($last !== null && $free < ((float) $last - 0.00000001)) {
+            $diff = (float) $last - $free;
+            $msgs[] = "📉 {$quote} bakiyesi azaldı: ".kb_money($last)." → ".kb_money($free)." (-".kb_money($diff).")";
+        }
+        if ($threshold && $free < (float) $threshold) {
+            $msgs[] = "⚠️ Düşük bakiye: ".kb_money($free)." {$quote} (eşik: ".kb_money($threshold).")";
+        }
+
+        $this->setting->last_quote_balance = $free;
+        $this->setting->save();
+
+        if ($msgs && $this->notifier->notifyBalance) {
+            $this->notifier->send(implode("\n", $msgs));
+        }
+
+        return ['quote' => $quote, 'free' => $free, 'alerts' => count($msgs)];
     }
 
     protected function log(string $level, string $event, string $message, ?Coin $coin = null, array $context = []): void

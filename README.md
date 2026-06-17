@@ -247,6 +247,7 @@ Tanımlı zamanlamalar (`bootstrap/app.php`):
 | `bot:dca` | 5 dakikada bir | Vadesi gelen coinlerde düzenli alım |
 | `bot:evaluate` | 5 dakikada bir | Açık pozisyonlarda kar-al kontrolü |
 | `bot:sync-symbols` | her gün 03:00 | Borsa lot/step/minNotional filtrelerini günceller |
+| `bot:balance-check` | saatlik | Canlı kote (TRY) bakiyesini kontrol eder, azalma/düşük bakiye Telegram bildirimi |
 
 > Komutlar kendi içinde "vakti geldi mi?" kontrolü yaptığından sık çalışmaları güvenlidir.
 > Zamanlayıcı kurulmasa bile panelden **"Botu şimdi çalıştır"** ile elle tetikleyebilirsiniz.
@@ -266,6 +267,20 @@ Anahtarlar veritabanında `APP_KEY` ile **şifrelenerek** saklanır.
 > sadece gerçek emir gönderimi için API gerekir.
 
 ---
+
+## Telegram Bildirimleri (opsiyonel)
+
+Bot, yaptığı tüm işlemleri ve hataları Telegram'dan bildirebilir (yalnızca bilgilendirme, işlem yapmaz).
+
+1. Telegram'da **@BotFather** ile yeni bot oluşturup **token** alın.
+2. Botunuza bir mesaj gönderin; sonra **@userinfobot** ile veya `https://api.telegram.org/bot<token>/getUpdates`
+   adresinden **chat ID**'nizi öğrenin.
+3. KBot → **Ayarlar → Telegram Bildirimleri**: token + chat ID girin, "Telegram bildirimleri aktif"i
+   işaretleyip kaydedin, sonra **"Test mesajı gönder"** ile doğrulayın.
+
+Bildirim türleri ayrı ayrı açılıp kapatılır: **işlemler** (alım/kar-al/satış), **hatalar**,
+**bakiye azalması / düşük bakiye**. Düşük bakiye eşiği belirleyebilirsiniz; canlı kote (TRY)
+bakiyesi saatlik `bot:balance-check` ile kontrol edilir ve azalma/eşik altı durumunda bildirilir.
 
 ## Kullanım
 
