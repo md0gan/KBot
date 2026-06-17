@@ -20,6 +20,7 @@ PHP_VER="${PHP_VER:-8.3}"
 PHP_BIN="php${PHP_VER}"   # KBot her zaman bu surumu kullanir (sistemin 'php' varsayilanina dokunmaz)
 DOMAIN="${DOMAIN:-_}"
 EMAIL="${EMAIL:-}"
+CLOUDFLARE="${CLOUDFLARE:-0}"   # 1 ise certbot atlanir (Cloudflare Origin Cert kullanilir)
 APP_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 FPM_SOCK="/run/php/php${PHP_VER}-fpm.sock"
 
