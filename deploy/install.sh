@@ -8,13 +8,17 @@
 #
 # Kullanim (proje kok dizininde, root olarak):
 #     sudo bash deploy/install.sh
-# Opsiyonel alan adi:
-#     sudo DOMAIN=bot.ornek.com bash deploy/install.sh
+# Alan adi (HTTPS icin gerekli) ve SSL e-postasi ile:
+#     sudo DOMAIN=bot.ornek.com EMAIL=ben@ornek.com bash deploy/install.sh
+#
+# DOMAIN verilirse kurulum sonunda Certbot ile ucretsiz SSL alinir (DNS, alan adini
+# sunucu IP'sine yonlendiriyor olmali). EMAIL verilmezse e-postasiz kayit yapilir.
 #
 set -euo pipefail
 
 PHP_VER="${PHP_VER:-8.3}"
 DOMAIN="${DOMAIN:-_}"
+EMAIL="${EMAIL:-}"
 APP_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 FPM_SOCK="/run/php/php${PHP_VER}-fpm.sock"
 
