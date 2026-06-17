@@ -60,7 +60,7 @@ class User extends Authenticatable
         return $this->setting()->firstOrCreate(
             ['user_id' => $this->id],
             [
-                'default_quote' => config('bot.default_quote', 'USDT'),
+                'default_quote' => config('bot.default_quote', 'TRY'),
                 'trading_mode' => config('bot.default_mode', 'simulation'),
                 'recv_window' => config('bot.recv_window', 5000),
                 'bot_enabled' => true,
