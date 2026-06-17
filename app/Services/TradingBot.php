@@ -26,12 +26,14 @@ class TradingBot
     public User $user;
     public Setting $setting;
     protected BinanceTrClient $client;
+    protected TelegramNotifier $notifier;
 
     public function __construct(User $user)
     {
         $this->user = $user;
         $this->setting = $user->settings();
         $this->client = BinanceTrClient::fromSetting($this->setting);
+        $this->notifier = TelegramNotifier::fromSetting($this->setting);
     }
 
     public function client(): BinanceTrClient
