@@ -1,0 +1,248 @@
+# KBot — Binance TR DCA & Kar-Al Botu
+
+Binance TR (`https://www.binance.tr`) üzerinde **düzenli alım (DCA)** yapan ve bir coin
+belirlenen **çarpana** ulaştığında **karı USDT'ye çevirip yalnızca sermayeyi coinde bırakan**
+bir bottur. Tüm yönetim **web arayüzünden** yapılır.
+
+> **Örnek senaryo:** Her hafta düzenli **10 USDT** BTC al. BTC pozisyonunun değeri
+> sermayenin **2 katına** ulaşınca, **yarısını sat** ve geriye **sadece sermaye** kalsın;
+> kazanılan kısım USDT olarak cebe girsin.
+
+**Stack:** PHP 8.2+ · Laravel 12 · MySQL · Tailwind (CDN) · Çoklu kullanıcı.
+
+> Not: PHP 8.2 ile **Laravel 12** kullanılır. PHP'yi **8.3+**'a yükseltirseniz
+> `composer.json` içinde `laravel/framework` sürümünü `^13.0` yapıp Laravel 13'e geçebilirsiniz.
+
+---
+
+## ⚠️ Önemli Uyarı
+
+Bu yazılım **yatırım tavsiyesi değildir**. Kripto para işlemleri yüksek risk içerir ve
+**tüm sorumluluk size aittir**. Stratejinizi önce **simülasyon modunda** test edin.
+Canlı modda emirler gerçek paranızla uygulanır. API anahtarınıza **yalnızca spot işlem**
+izni verin, **para çekme (withdraw) iznini kapatın**.
+
+---
+
+## İçindekiler
+
+1. [Strateji Nasıl Çalışır?](#strateji-nasıl-çalışır)
+2. [Gereksinimler](#gereksinimler)
+3. [Kurulum](#kurulum)
+4. [Zamanlanmış Görev (Scheduler)](#zamanlanmış-görev-scheduler)
+5. [Binance TR API Anahtarı](#binance-tr-api-anahtarı)
+6. [Kullanım](#kullanım)
+7. [Artisan Komutları](#artisan-komutları)
+8. [Proje Yapısı](#proje-yapısı)
+9. [Güvenlik](#güvenlik)
+10. [Sorun Giderme](#sorun-giderme)
+
+---
+
+## Strateji Nasıl Çalışır?
+
+Her coin için bir **pozisyon** tutulur:
+
+- **Sermaye (`cost_basis`)** — coine yatırdığınız ve hâlâ coinde duran kote (USDT) tutar.
+- **Miktar (`quantity`)** — botun tuttuğu coin adedi.
+- **Çevrilen kar (`realized_profit`)** — şimdiye kadar USDT'ye çevrilen toplam kar.
+
+### 1) Düzenli Alım (DCA)
+
+Her periyotta (saatlik / günlük / haftalık / aylık) sabit kote tutar kadar **MARKET alım**
+yapılır. Binance TR'de MARKET alım `quoteOrderQty` ile yapıldığından "tam 10 USDT harca"
+mümkündür. Alım sonrası sermaye ve miktar büyür.
+
+### 2) Kar-Al (Take-Profit)
+
+Pozisyonun güncel değeri **≥ çarpan × sermaye** olunca tetiklenir:
+
+| Strateji | Davranış |
+| --- | --- |
+| **Sermayeyi bırak** (varsayılan) | Karın **tamamı** satılır; geriye **tam olarak sermaye** kalır. |
+| **Sabit oran** | Karın belirlenen **oranı** (örn. %50) satılır; gerisi coinde kalır. |
+
+Satıştan sonra **kalan miktarın güncel değeri yeni sermaye** olur (çarpan 1'e döner),
+böylece bir sonraki kar-al aynı çarpanla tekrar tetiklenir.
+
+**Örnek (çarpan = 2, "sermayeyi bırak"):**
+
+```
+Başlangıç: 10 USDT ile BTC alındı  → sermaye = 10, değer = 10  (1.0x)
+Fiyat 2 katına çıktı               → değer = 20             (2.0x) → TETİK
+Satılan: değer − sermaye = 10 USDT (pozisyonun yarısı)
+Sonuç:   coinde 10 USDT'lik BTC kaldı (sermaye) + 10 USDT kar cebe (realized_profit)
+Yeni durum: sermaye = 10, değer = 10 (1.0x) → döngü baştan
+```
+
+> Düzenli alımlar devam ettikçe sermaye büyür; kar-al her zaman **o anki sermayeye** göre hesaplanır.
+
+---
+
+## Gereksinimler
+
+- **PHP 8.2+** — `pdo_mysql`, `mbstring`, `openssl`, `bcmath`, `curl` eklentileri (XAMPP ile gelir)
+- **Composer 2**
+- **MySQL 8** (veya MariaDB 10.4+)
+- (Opsiyonel) canlı işlem için Binance TR hesabı + API anahtarı
+
+---
+
+## Kurulum
+
+```bash
+# 1) Bağımlılıklar
+composer install
+
+# 2) Ortam dosyası
+cp .env.example .env          # Windows: copy .env.example .env
+php artisan key:generate
+
+# 3) .env içinde veritabanı bilgilerini doldurun:
+#    DB_DATABASE=kbot
+#    DB_USERNAME=root
+#    DB_PASSWORD=...
+#    (önce MySQL'de "kbot" veritabanını oluşturun)
+
+# 4) Tabloları ve örnek veriyi oluştur
+php artisan migrate --seed
+
+# 5) Sunucuyu başlat
+php artisan serve
+```
+
+Tarayıcıdan `http://localhost:8000` adresine gidin.
+
+**Örnek (seed) giriş bilgileri:**
+
+- E-posta: `admin@kbot.local`
+- Şifre: `password`
+
+Veya `/register` üzerinden yeni hesap oluşturun. (İlk işiniz şifreyi değiştirmek olsun.)
+
+> Seed ile **BTC_USDT** ve **ETH_USDT** örnek olarak (kapalı/simülasyon) eklenir.
+> Panelden "Başlat" diyerek aktif edebilirsiniz.
+
+---
+
+## Zamanlanmış Görev (Scheduler)
+
+Botun otomatik çalışması için Laravel zamanlayıcısını dakikada bir tetikleyin.
+
+**Linux/macOS (crontab -e):**
+
+```cron
+* * * * * cd /proje/yolu && php artisan schedule:run >> /dev/null 2>&1
+```
+
+**Windows (Görev Zamanlayıcı):** Her dakika çalışan bir görev oluşturun:
+
+```
+Program: php
+Argüman:  artisan schedule:run
+Başlangıç: C:\proje\yolu
+```
+
+Tanımlı zamanlamalar (`bootstrap/app.php`):
+
+| Komut | Sıklık | İş |
+| --- | --- | --- |
+| `bot:dca` | 5 dakikada bir | Vadesi gelen coinlerde düzenli alım |
+| `bot:evaluate` | 5 dakikada bir | Açık pozisyonlarda kar-al kontrolü |
+| `bot:sync-symbols` | her gün 03:00 | Borsa lot/step/minNotional filtrelerini günceller |
+
+> Komutlar kendi içinde "vakti geldi mi?" kontrolü yaptığından sık çalışmaları güvenlidir.
+> Zamanlayıcı kurulmasa bile panelden **"Botu şimdi çalıştır"** ile elle tetikleyebilirsiniz.
+
+---
+
+## Binance TR API Anahtarı
+
+1. Binance TR hesabınızda **API Yönetimi** bölümünden yeni anahtar oluşturun.
+2. İzinler: **Spot işlem (okuma + emir) AÇIK**, **Para çekme KAPALI**.
+3. KBot'ta **Ayarlar** sayfasına API Key + Secret girip kaydedin.
+4. **"Bağlantıyı test et"** ile doğrulayın.
+
+Anahtarlar veritabanında `APP_KEY` ile **şifrelenerek** saklanır.
+
+> API olmadan da **simülasyon** modu çalışır (fiyatlar herkese açık uçtan çekilir);
+> sadece gerçek emir gönderimi için API gerekir.
+
+---
+
+## Kullanım
+
+- **Panel:** Toplam sermaye, güncel değer, açık K/Z, USDT'ye çevrilen kar; her coin için
+  çarpana ilerleme çubuğu.
+- **Coin ekle/düzenle:** Coin, karşı para, tutar, periyot, çarpan, kar-al stratejisi, mod.
+  İstediğiniz zaman **ekleyip çıkarabilir**siniz.
+- **İşlem modu:**
+  - *Genel ayarı kullan* — Ayarlar'daki genel mod (simülasyon/canlı)
+  - *Simülasyon* — sadece bu coin kâğıt üzerinde
+  - *Canlı* — sadece bu coin gerçek emir
+- **Manuel işlemler:** Coin detayında "Şimdi al", "Değerlendir", "Sat / Tümünü sat".
+- **Takip:** İşlem geçmişi (filtreli) ve bot günlüğü ile tüm hareketleri izleyin.
+
+---
+
+## Artisan Komutları
+
+```bash
+php artisan bot:dca            # Vadesi gelen alımları yap
+php artisan bot:evaluate       # Kar-al değerlendirmesi
+php artisan bot:sync-symbols   # Sembol filtrelerini güncelle
+php artisan bot:dca --user=1   # Sadece belirli kullanıcı için
+php artisan bot:ping           # Botun ayakta olduğunu test et
+```
+
+---
+
+## Proje Yapısı
+
+```
+app/
+ ├─ Models/            User, Setting, Coin, Position, Trade, BotLog
+ ├─ Services/
+ │   ├─ BinanceTrClient.php   # İmzalı (HMAC-SHA256) API istemcisi
+ │   └─ TradingBot.php        # DCA + kar-al strateji motoru
+ ├─ Console/Commands/  RunDcaBuys, EvaluatePositions, SyncSymbols
+ └─ Http/Controllers/  Dashboard, Coin, Setting, Bot, Trade, Auth
+config/bot.php          # API uçları, varsayılanlar, enum eşlemeleri
+database/migrations/    # users, settings, coins, positions, trades, bot_logs
+resources/views/        # Tailwind tabanlı arayüz (Blade)
+routes/web.php          # Web rotaları
+bootstrap/app.php       # Zamanlama tanımları
+```
+
+### Binance TR API notları (config/bot.php)
+
+- Base URL: `https://www.binance.tr` — imzalı uçlar `/open/v1/...`
+- Emir: `POST /open/v1/orders` · `side` 0=BUY/1=SELL · `type` 2=MARKET
+- MARKET alım `quoteOrderQty` (harcanacak USDT), MARKET satış `quantity` (coin adedi)
+- Piyasa fiyatı: MAIN semboller için `https://api.binance.me/api/v3/...`
+
+---
+
+## Güvenlik
+
+- API anahtarları DB'de şifreli; arayüzde maskeli gösterilir.
+- API anahtarına **para çekme izni vermeyin**.
+- Çoklu kullanıcı: her kullanıcı yalnızca kendi coin/işlem/ayarlarını görür.
+- Canlı moda geçmeden önce simülasyonda doğrulayın; üst bantta kırmızı **CANLI** uyarısı çıkar.
+- `.env` ve `APP_KEY` gizli kalmalı (APP_KEY değişirse kayıtlı API anahtarları çözülemez).
+
+---
+
+## Sorun Giderme
+
+| Belirti | Çözüm |
+| --- | --- |
+| `composer install` script hatası | `cp .env.example .env && php artisan key:generate` sonra tekrar `composer install` |
+| Sayfalar boş/500 | `storage` ve `bootstrap/cache` yazılabilir olmalı; `php artisan migrate` çalıştı mı? |
+| Fiyat alınamadı | Sunucudan `binance.tr`/`api.binance.me` erişimi olmalı; "Sembolleri senkronla" deneyin |
+| Canlı emir reddi | API izinleri (spot trade) ve `min_notional`/`step_size` (senkron) kontrol edin |
+| Sunucu saati kayması | İmza `recvWindow` ile korunur; sunucu saatini NTP ile senkron tutun |
+
+---
+
+KBot · Eğitim ve kişisel kullanım içindir. Yatırım tavsiyesi değildir.
