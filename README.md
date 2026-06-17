@@ -135,8 +135,16 @@ sudo mkdir -p /var/www
 cd /var/www
 sudo git clone https://github.com/md0gan/KBot.git kbot
 cd kbot
-sudo DOMAIN=bot.ornek.com bash deploy/install.sh
+sudo DOMAIN=bot.ornek.com EMAIL=siz@ornek.com bash deploy/install.sh
 ```
+
+Script şunları yapar: PHP 8.3 + eklentiler, Composer, **Nginx + PHP-FPM**, dosya izinleri,
+`APP_KEY`, **scheduler cron'u** ve **`DOMAIN` verildiyse Certbot ile ücretsiz SSL** (HTTP→HTTPS yönlendirmeli).
+
+> **SSL için ön koşul:** Alan adının (`bot.ornek.com`) DNS **A kaydı** sunucunuzun IP'sine
+> bakıyor olmalı ve 80/443 portları açık olmalı. DNS henüz yayılmadıysa SSL adımı atlanır
+> (HTTP site çalışır); sonra `sudo certbot --nginx -d bot.ornek.com --redirect` ile alabilirsiniz.
+> `EMAIL` verilmezse e-postasız kayıt yapılır (yenileme uyarısı gelmez).
 
 > Kurulum, scriptin bulunduğu **proje klasörüne (yerinde)** yapılır; ayrı bir yere kopyalamaz.
 > Bu yüzden `/var/www/kbot` önerilir. `/home` veya `/root` altında kurarsanız script sizi uyarır.
