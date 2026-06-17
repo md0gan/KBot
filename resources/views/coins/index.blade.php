@@ -48,6 +48,11 @@
                                     <button class="text-xs px-2 py-1 rounded border border-slate-300 hover:bg-slate-100">{{ $coin->enabled ? 'Durdur' : 'Başlat' }}</button>
                                 </form>
                                 <a href="{{ route('coins.edit', $coin) }}" class="text-xs px-2 py-1 rounded border border-slate-300 hover:bg-slate-100">Düzenle</a>
+                                <form method="POST" action="{{ route('coins.destroy', $coin) }}" class="inline"
+                                      onsubmit="return confirm('{{ $coin->symbol }} silinsin mi? Tüm işlem geçmişi de silinir.');">
+                                    @csrf @method('DELETE')
+                                    <button class="text-xs px-2 py-1 rounded border border-red-300 text-red-600 hover:bg-red-50">Sil</button>
+                                </form>
                             </td>
                         </tr>
                     @empty
