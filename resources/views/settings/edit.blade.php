@@ -27,7 +27,8 @@
             </div>
         </div>
 
-        <form method="POST" action="{{ route('settings.update') }}" class="space-y-6">
+        <form method="POST" action="{{ route('settings.update') }}" class="space-y-6"
+              data-old-mode="{{ $setting->trading_mode }}" onsubmit="return kbConfirmLive(this)">
             @csrf @method('PUT')
 
             {{-- API --}}
