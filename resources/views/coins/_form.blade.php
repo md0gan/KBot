@@ -1,4 +1,5 @@
 @php($coin = $coin ?? null)
+@php($quoteDefault = old('quote_asset', $coin->quote_asset ?? (auth()->user()->settings()->default_quote ?? 'TRY')))
 <div class="grid md:grid-cols-2 gap-5">
     <div>
         <label class="block text-sm font-medium text-slate-700 mb-1">Coin (Base Asset)</label>
