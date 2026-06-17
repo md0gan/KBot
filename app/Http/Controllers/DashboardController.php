@@ -21,6 +21,11 @@ class DashboardController extends Controller
         $realized = (float) $coins->sum(fn ($c) => $c->position?->realized_profit ?? 0);
         $unrealized = $currentValue - $invested;
 
+        // Panel toplamlarinda gosterilecek para birimi: coinlerin en yaygin kote birimi,
+        // yoksa kullanicinin varsayilani (genelde TRY).
+        $quote = $coins->pluck('quote_asset')->filter()->countBy()->sortDesc()->keys()->first()
+            ?: ($setting->default_quote ?: 'TRY');
+
         $recentTrades = $user->trades()->with('coin')->latest()->limit(12)->get();
 
         return view('dashboard', compact(
@@ -30,6 +35,7 @@ class DashboardController extends Controller
             'currentValue',
             'unrealized',
             'realized',
+            'quote',
             'recentTrades',
         ));
     }
