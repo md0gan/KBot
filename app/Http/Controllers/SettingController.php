@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Services\BinanceTrClient;
+use App\Services\TradingBot;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\View\View;
