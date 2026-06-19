@@ -39,24 +39,37 @@ class GridStrategy implements Strategy
             ? $bot->budget / $levels->count()
             : $bot->order_size;
 
+        // Onceki tur fiyati. Yoksa (ilk tur) kesisim olusmaz -> kurulumda toplu alim olmaz.
+        $prev = $engine->previousPrice;
+
         foreach ($levels as $level) {
-            if ($level->status === 'waiting_buy' && $price <= $level->buy_price) {
-                $order = $engine->buy($bot, $perLevelQuote, "grid_buy_L{$level->level_index}", $price);
-                if ($order && $order->quantity > 0) {
-                    $level->status = 'holding';
-                    $level->quantity = $order->quantity;
-                    $level->buy_order_quote = $order->quote_amount;
-                    $level->save();
-                    $lines[] = "Grid AL L{$level->level_index} @ ".kb_price($price);
+            if ($level->status === 'waiting_buy') {
+                // Yalniz fiyat alis seviyesine YUKARIDAN ASAGI inerek dokununca al
+                $buyCross = $prev !== null && $prev > $level->buy_price && $price <= $level->buy_price;
+                if ($buyCross) {
+                    $order = $engine->buy($bot, $perLevelQuote, "grid_buy_L{$level->level_index}", $price);
+                    if ($order && $order->quantity > 0) {
+                        $level->status = 'holding';
+                        $level->quantity = $order->quantity;
+                        $level->buy_order_quote = $order->quote_amount;
+                        $level->save();
+                        $lines[] = "Grid AL L{$level->level_index} @ ".kb_price($price);
+                    }
                 }
-            } elseif ($level->status === 'holding' && $price >= $level->sell_price) {
-                $order = $engine->sell($bot, $level->quantity, "grid_sell_L{$level->level_index}", $price);
-                if ($order && $order->quantity > 0) {
-                    $level->status = 'waiting_buy';
-                    $level->quantity = 0;
-                    $level->buy_order_quote = 0;
-                    $level->save();
-                    $lines[] = "Grid SAT L{$level->level_index} @ ".kb_price($price);
+            } elseif ($level->status === 'holding') {
+                // Satis seviyesine ASAGIDAN YUKARI cikinca sat
+                $sellCross = $prev === null
+                    ? $price >= $level->sell_price
+                    : ($prev < $level->sell_price && $price >= $level->sell_price);
+                if ($sellCross) {
+                    $order = $engine->sell($bot, $level->quantity, "grid_sell_L{$level->level_index}", $price);
+                    if ($order && $order->quantity > 0) {
+                        $level->status = 'waiting_buy';
+                        $level->quantity = 0;
+                        $level->buy_order_quote = 0;
+                        $level->save();
+                        $lines[] = "Grid SAT L{$level->level_index} @ ".kb_price($price);
+                    }
                 }
             }
         }

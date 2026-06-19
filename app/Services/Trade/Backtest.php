@@ -303,6 +303,8 @@ class Backtest
         $equity = [];
 
         foreach ($closes as $idx => $price) {
+            $prev = $idx > 0 ? $closes[$idx - 1] : null;
+
             if ($trailing) {
                 $flat = true;
                 foreach ($L as $l) {
@@ -326,11 +328,13 @@ class Backtest
             }
 
             foreach ($L as $i => $l) {
-                if (! $l['holding'] && $price <= $l['buy'] && $cash >= $perLevel) {
+                $buyCross = $prev !== null && $prev > $l['buy'] && $price <= $l['buy'];
+                $sellCross = $prev !== null && $prev < $l['sell'] && $price >= $l['sell'];
+                if (! $l['holding'] && $buyCross && $cash >= $perLevel) {
                     $cash -= $perLevel;
                     $L[$i]['holding'] = true;
                     $L[$i]['qty'] = ($perLevel * (1 - $fee)) / ($price * (1 + $slip));
-                } elseif ($l['holding'] && $price >= $l['sell']) {
+                } elseif ($l['holding'] && $sellCross) {
                     $net = $l['qty'] * $price * (1 - $slip) * (1 - $fee);
                     $cash += $net;
                     $pl = $net - $perLevel;

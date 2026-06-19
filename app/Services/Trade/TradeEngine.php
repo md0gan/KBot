@@ -21,6 +21,7 @@ class TradeEngine
 {
     public User $user;
     public Setting $setting;
+    public ?float $previousPrice = null;   // bir onceki tur fiyati (grid kesisim tespiti)
     protected BinanceTrClient $client;
     protected TelegramNotifier $notifier;
 
@@ -73,6 +74,9 @@ class TradeEngine
         if ($price <= 0) {
             return ['fiyat alinamadi'];
         }
+
+        // Onceki tur fiyatini (kesisim tespiti icin) valuation guncellemeden ONCE yakala
+        $this->previousPrice = $bot->position()->first()?->last_price;
 
         $this->updateValuation($bot, $price);
 
