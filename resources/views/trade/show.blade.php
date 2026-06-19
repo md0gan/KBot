@@ -48,7 +48,7 @@
             <h2 class="font-semibold">Fiyat Grafiği <span class="text-xs font-normal text-slate-400">{{ $tradeBot->symbol }}</span></h2>
             <div class="flex items-center gap-2">
                 @if ($tradeBot->strategy === 'grid')
-                    <span class="text-xs text-slate-400">— <span class="text-sky-500">┄ alış kademesi</span> · <span class="text-emerald-600">━ tutulan</span></span>
+                    <span class="text-xs text-slate-400">— <span class="text-emerald-600 font-medium">━ alış</span> · <span class="text-red-500">┄ satış</span></span>
                 @endif
                 <select id="kb-chart-interval" class="rounded-md border-slate-300 text-xs py-1">
                     @foreach (['1m','5m','15m','30m','1h','4h','1d'] as $iv)
@@ -98,10 +98,18 @@
                         }];
                         (d.grid || []).forEach(function (g) {
                             var holding = g.status === 'holding';
+                            // Alış kademesi: yeşil ve belirgin (tutulan = düz/kalın, bekleyen = kesikli)
                             datasets.push({
                                 label: '', data: labels.map(function () { return g.buy; }),
-                                borderColor: holding ? 'rgba(16,185,129,0.9)' : 'rgba(2,132,199,0.45)',
-                                borderDash: holding ? [] : [4, 4], borderWidth: holding ? 1.5 : 1,
+                                borderColor: holding ? 'rgba(16,185,129,1)' : 'rgba(16,185,129,0.8)',
+                                borderDash: holding ? [] : [6, 3], borderWidth: holding ? 2.5 : 1.75,
+                                pointRadius: 0, fill: false, tension: 0, order: 4
+                            });
+                            // Satış kademesi: kırmızı (ince kesikli)
+                            datasets.push({
+                                label: '', data: labels.map(function () { return g.sell; }),
+                                borderColor: 'rgba(239,68,68,0.65)',
+                                borderDash: [4, 4], borderWidth: 1,
                                 pointRadius: 0, fill: false, tension: 0, order: 5
                             });
                         });
