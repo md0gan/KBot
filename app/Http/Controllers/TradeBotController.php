@@ -51,7 +51,7 @@ class TradeBotController extends Controller
             'strategy' => $data['strategy'],
             'mode' => $data['mode'],
             'budget' => $data['budget'],
-            'order_size' => ($data['order_size'] ?? 0) ?: $data['budget'],
+            'order_size' => $data['order_size'] ?? 0,
             'max_buy_price' => $data['max_buy_price'] ?? null,
             'notes' => $data['notes'] ?? null,
         ]);
@@ -113,7 +113,7 @@ class TradeBotController extends Controller
             'strategy' => $data['strategy'],
             'mode' => $data['mode'],
             'budget' => $data['budget'],
-            'order_size' => ($data['order_size'] ?? 0) ?: $data['budget'],
+            'order_size' => $data['order_size'] ?? 0,
             'max_buy_price' => $data['max_buy_price'] ?? null,
             'notes' => $data['notes'] ?? null,
         ]);

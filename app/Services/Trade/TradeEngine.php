@@ -61,6 +61,9 @@ class TradeEngine
     public function effectiveOrderSize(TradeBot $bot): float
     {
         $size = (float) $bot->order_size;
+        if ($size <= 0) {
+            $size = (float) $bot->budget; // bos birakildiysa butcenin tamami (RSI/MA)
+        }
         if ($bot->param('compounding', false) && $bot->budget > 0) {
             $realized = (float) ($bot->position?->realized_profit ?? 0);
             $factor = max(0.0, ((float) $bot->budget + $realized) / (float) $bot->budget);

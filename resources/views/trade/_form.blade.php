@@ -52,7 +52,7 @@
     <div>
         <label class="block text-sm font-medium text-slate-700 mb-1">İşlem Başına Tutar (opsiyonel)</label>
         <input type="number" name="order_size" step="0.00000001" min="0"
-               value="{{ old('order_size', $bot->order_size ?? '') }}"
+               value="{{ old('order_size', ($bot && $bot->order_size > 0) ? $bot->order_size : '') }}"
                class="w-full rounded-lg border-slate-300 focus:border-sky-500 focus:ring-sky-500">
         <p class="text-xs text-slate-400 mt-1">RSI/MA: her sinyalde alınacak tutar (boşsa bütçe). Grid'de bütçe kademelere bölünür.</p>
     </div>
