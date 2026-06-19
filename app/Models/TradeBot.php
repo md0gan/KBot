@@ -120,4 +120,40 @@ class TradeBot extends Model
     {
         return $q->where('enabled', true);
     }
+
+    /**
+     * Grid v2: güncel fiyatın hemen ALTINDAKİ, tutulmayan ilk alım seviyesi ("sonraki dip").
+     * Çapa + adımdan hesaplanır; ilgili seviye satırı henüz oluşmamış olsa bile çalışır.
+     * Tutulan (holding) seviyeler atlanır. Hesaplanamazsa null döner.
+     */
+    public function gridV2NextDip(float $price): ?float
+    {
+        $anchor = (float) ($this->v2_anchor_price ?? 0);
+        $step = (float) $this->param('v2_step_pct', 1) / 100;
+        if ($anchor <= 0 || $price <= 0 || $step <= 0) {
+            return null;
+        }
+
+        $kFloor = (int) ceil(1 / $step) - 1; // buy_price > 0 için k < 1/step
+        $heldSet = array_flip(
+            $this->gridLevels->where('status', 'holding')->pluck('level_index')->all()
+        );
+
+        // Fiyatın hemen altındaki ilk seviye indeksinden başla.
+        $k = (int) floor((1 - $price / $anchor) / $step + 1e-9) + 1;
+        if ($k < 1) {
+            $k = 1;
+        }
+        for (; $k <= $kFloor; $k++) {
+            $buy = $anchor * (1 - $k * $step);
+            if ($buy <= 0) {
+                break;
+            }
+            if ($buy < $price && ! isset($heldSet[$k])) {
+                return $buy;
+            }
+        }
+
+        return null;
+    }
 }

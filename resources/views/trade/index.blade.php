@@ -60,12 +60,11 @@
                     $pnl = $val - (float) ($pos->cost_basis ?? 0);
                     $lastPrice = (float) ($pos->last_price ?? 0);
                     $nextBuy = 0;
-                    if (in_array($bot->strategy, ['grid', 'grid_v2'], true)) {
+                    if ($bot->strategy === 'grid') {
                         $nextBuy = (float) ($bot->gridLevels->where('status', 'waiting_buy')->max('buy_price') ?? 0);
-                        // Grid v2: henüz seviye oluşmadıysa çapadan ilk dip hedefini göster.
-                        if ($nextBuy <= 0 && $bot->strategy === 'grid_v2' && $bot->v2_anchor_price > 0) {
-                            $nextBuy = (float) $bot->v2_anchor_price * (1 - ((float) $bot->param('v2_step_pct', 1)) / 100);
-                        }
+                    } elseif ($bot->strategy === 'grid_v2') {
+                        // Güncel fiyatın hemen altındaki, tutulmayan ilk seviye (gerçek sonraki dip).
+                        $nextBuy = (float) ($bot->gridV2NextDip($lastPrice) ?? 0);
                     }
                 @endphp
                 <div class="bg-white rounded-xl p-4 shadow-sm border border-slate-200">
