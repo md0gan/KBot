@@ -81,6 +81,14 @@
                     <div class="flex justify-between"><dt class="text-slate-500">Açık pozisyon değeri</dt><dd>{{ kb_money($result['open_value']) }} {{ $q }}</dd></div>
                     <div class="flex justify-between"><dt class="text-slate-500">Kullanılan tutar</dt><dd>{{ kb_money($result['invested']) }} {{ $q }}</dd></div>
                 </dl>
+
+                <div class="mt-4 rounded-lg bg-sky-50 border border-sky-100 px-3 py-2 text-xs text-sky-800">
+                    <strong>Toplam K/Z = Gerçekleşen K/Z + açık pozisyonun değer farkı.</strong>
+                    "Gerçekleşen" sadece <em>kapanmış</em> işlemlerin sonucudur; henüz satılmamış (açık) pozisyon dahil değildir.
+                    Bu yüzden kazanma oranı %100 olsa bile, elde tutulan zararlı pozisyon nedeniyle Toplam K/Z negatif olabilir.
+                    Stratejiyi değerlendirirken <strong>Toplam K/Z</strong>'yi ve <strong>Al-Tut</strong> kıyasını esas alın.
+                </div>
+
                 <p class="mt-4 text-xs text-slate-400">
                     Not: Komisyon (%{{ $fee }}) ve kayma (%{{ $slip }}) modele dahildir; ancak emir dolum gecikmeleri,
                     likidite ve kısmi dolumlar hesaba katılmaz. Yalnızca fikir vermek içindir; gerçek sonuçlar farklılık gösterir.
