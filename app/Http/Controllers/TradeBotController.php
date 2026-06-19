@@ -22,12 +22,14 @@ class TradeBotController extends Controller
         $realized = (float) $bots->sum(fn ($b) => $b->position?->realized_profit ?? 0);
         $unrealized = $currentValue - $invested;
 
+        $setting = $request->user()->settings();
         $quote = $bots->pluck('quote_asset')->filter()->countBy()->sortDesc()->keys()->first()
-            ?: ($request->user()->settings()->default_quote ?: 'TRY');
+            ?: ($setting->default_quote ?: 'TRY');
+        $globalMode = $setting->trading_mode ?? 'simulation';
 
         $recentOrders = $request->user()->tradeOrders()->with('tradeBot')->latest()->limit(12)->get();
 
-        return view('trade.index', compact('bots', 'invested', 'currentValue', 'unrealized', 'realized', 'quote', 'recentOrders'));
+        return view('trade.index', compact('bots', 'invested', 'currentValue', 'unrealized', 'realized', 'quote', 'globalMode', 'recentOrders'));
     }
 
     public function create(): View

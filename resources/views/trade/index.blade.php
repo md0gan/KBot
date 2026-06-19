@@ -51,6 +51,8 @@
                         <a href="{{ route('trade.show', $bot) }}" class="font-bold text-lg hover:text-sky-600">{{ $bot->symbol }}</a>
                         <div class="flex items-center gap-1">
                             <span class="text-xs px-2 py-0.5 rounded-full bg-slate-100 text-slate-600">{{ $bot->strategyLabel() }}</span>
+                            @php($bmode = $bot->effectiveMode($globalMode))
+                            <span class="text-xs px-2 py-0.5 rounded-full {{ $bmode === 'live' ? 'bg-red-100 text-red-700' : 'bg-emerald-100 text-emerald-700' }}">{{ $bmode === 'live' ? 'canlı' : 'sim' }}</span>
                             @if ($bot->enabled)
                                 <span class="text-xs px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-700">aktif</span>
                             @else
