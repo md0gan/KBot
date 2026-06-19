@@ -169,6 +169,9 @@
                         @endphp
                         <div class="flex justify-between"><dt class="text-slate-500">Aralık</dt><dd>{{ $aralik }}</dd></div>
                         <div class="flex justify-between"><dt class="text-slate-500">Kademe</dt><dd>{{ $p['levels'] ?? '—' }}</dd></div>
+                        @if (($p['sell_profit_pct'] ?? 0) > 0)
+                            <div class="flex justify-between"><dt class="text-slate-500">Sabit satış kârı</dt><dd class="text-emerald-600">her kademe alış +%{{ rtrim(rtrim(number_format($p['sell_profit_pct'], 2, '.', ''), '0'), '.') }}</dd></div>
+                        @endif
                     @elseif ($tradeBot->strategy === 'rsi')
                         <div class="flex justify-between"><dt class="text-slate-500">Zaman / Periyot</dt><dd>{{ $p['interval'] ?? '15m' }} / {{ $p['period'] ?? 14 }}</dd></div>
                         <div class="flex justify-between"><dt class="text-slate-500">Eşikler</dt><dd>{{ $p['oversold'] ?? 30 }} / {{ $p['overbought'] ?? 70 }}</dd></div>

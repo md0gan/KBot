@@ -326,6 +326,18 @@ class Backtest
         return $pairs;
     }
 
+    /** Sabit satis kari: sell_profit_pct > 0 ise sell = buy*(1+%X) (TradeEngine ile ayni). */
+    protected static function applySellProfit(array $pairs, array $p): array
+    {
+        $sellPct = (float) ($p['sell_profit_pct'] ?? 0);
+        if ($sellPct <= 0) {
+            return $pairs;
+        }
+        $f = 1 + $sellPct / 100;
+
+        return array_map(fn ($pr) => [$pr[0], $pr[0] * $f], $pairs);
+    }
+
     protected static function grid(array $p, array $closes, float $budget, float $fee, float $slip): array
     {
         $levels = max(2, (int) ($p['levels'] ?? 5));
@@ -359,6 +371,9 @@ class Backtest
                 $pairs[] = [$b, $b + $st];
             }
         }
+
+        // Sabit satis kari (varsa) tum modlara uygulanir.
+        $pairs = self::applySellProfit($pairs, $p);
 
         $perLevel = $budget / $levels;
         $trailing = (bool) ($p['trailing'] ?? false);
@@ -404,6 +419,7 @@ class Backtest
                             $pairs[] = [$b, $b + $st];
                         }
                     }
+                    $pairs = self::applySellProfit($pairs, $p);
                     $L = [];
                     foreach ($pairs as [$b, $s]) {
                         $L[] = ['buy' => $b, 'sell' => $s, 'holding' => false, 'qty' => 0.0];

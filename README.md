@@ -292,7 +292,9 @@ Menüden **Trade → + Trade botu ekle**. Stratejiler:
   *alım merdiveni* (tüm kademeler güncel fiyatın altında — bot yalnızca düştükçe alır) ya da
   *simetrik* (fiyatın altı ve üstü). **Trailing** açılırsa, fiyat aralık dışına çıkıp pozisyon
   boşaldığında grid güncel fiyata göre yeniden kurulur (piyasayı takip). Bir kademe yalnızca fiyat
-  o seviyeye **yukarıdan inerek** dokununca alır (kurulumda toplu alım olmaz).
+  o seviyeye **yukarıdan inerek** dokununca alır (kurulumda toplu alım olmaz). **Sabit Satış Kârı (%)**
+  seçilirse kademeler alım aralığından bağımsız, her biri **alış × (1+%X)** hedefiyle satar
+  (örn. %3 aralıkla biriktir, %8 kârla sat; 0 ise bir üst seviyeden satar).
 - **RSI:** RSI aşırı satım eşiğinin altına inince alır, aşırı alım eşiğinin üstüne çıkınca satar.
 - **MA Kesişimi:** Kısa MA uzun MA'yı yukarı keserse alır, aşağı keserse satar (SMA/EMA).
 - **MACD:** MACD çizgisi sinyal çizgisini yukarı keserse alır, aşağı keserse satar.

@@ -113,6 +113,12 @@
             <input type="number" name="levels" min="2" max="100" value="{{ old('levels', $p['levels'] ?? 5) }}"
                    class="w-full rounded-lg border-slate-300 focus:border-sky-500 focus:ring-sky-500">
         </div>
+        <div class="md:col-span-2">
+            <label class="block text-sm font-medium text-slate-700 mb-1">Sabit Satış Kârı (% — 0 = kademe adımı kadar)</label>
+            <input type="number" name="sell_profit_pct" step="0.1" min="0" max="200" value="{{ old('sell_profit_pct', $p['sell_profit_pct'] ?? 0) }}"
+                   class="w-full md:w-1/2 rounded-lg border-slate-300 focus:border-sky-500 focus:ring-sky-500">
+            <p class="text-xs text-slate-400 mt-1">0 ise her kademe bir üst seviyeden satar. &gt;0 ise alım aralığından bağımsız, her kademe <strong>alış × (1+%X)</strong> hedefiyle satar (örn. %3 aralıkla topla, %8 kârla sat).</p>
+        </div>
         <div class="grid-manual">
             <label class="block text-sm font-medium text-slate-700 mb-1">Alt Fiyat</label>
             <input type="number" name="lower" step="0.00000001" min="0" value="{{ old('lower', $p['lower'] ?? '') }}"

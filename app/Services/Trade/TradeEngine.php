@@ -518,6 +518,9 @@ class TradeEngine
             }
         }
 
+        // Sabit satis kari secildiyse her kademe alis*(1+%X) fiyatindan satar.
+        $pairs = $this->applySellProfit($pairs, $params);
+
         if (empty($pairs)) {
             return false;
         }
@@ -551,6 +554,24 @@ class TradeEngine
         }
 
         return $pairs;
+    }
+
+    /**
+     * Sabit satis kari: sell_profit_pct > 0 ise her kademenin satis fiyatini
+     * alis * (1 + %X) yapar (alim araligindan bagimsiz). 0 ise ciftler degismez.
+     *
+     * @param  array<int, array{0: float, 1: float}>  $pairs
+     * @return array<int, array{0: float, 1: float}>
+     */
+    protected function applySellProfit(array $pairs, array $params): array
+    {
+        $sellPct = (float) ($params['sell_profit_pct'] ?? 0);
+        if ($sellPct <= 0) {
+            return $pairs;
+        }
+        $f = 1 + $sellPct / 100;
+
+        return array_map(fn ($pr) => [$pr[0], $pr[0] * $f], $pairs);
     }
 
     /** ATR (volatilite) tabanli kademe adimini (fiyat birimi) hesaplar. 0 = hesaplanamadi. */
@@ -627,7 +648,7 @@ class TradeEngine
         if (($params['range_mode'] ?? 'manual') === 'auto') {
             $pct = max(0.0001, (float) ($params['percent'] ?? 10) / 100);
             $levels = max(2, (int) ($params['levels'] ?? 5));
-            $this->persistGridLevels($bot, $this->autoGridPairs($price, $pct, $levels, $params['anchor'] ?? 'symmetric'));
+            $this->persistGridLevels($bot, $this->applySellProfit($this->autoGridPairs($price, $pct, $levels, $params['anchor'] ?? 'symmetric'), $params));
 
             return true;
         }
@@ -661,7 +682,7 @@ class TradeEngine
             $buy = $newLower + $step * $i;
             $pairs[] = [$buy, $buy + $step];
         }
-        $this->persistGridLevels($bot, $pairs);
+        $this->persistGridLevels($bot, $this->applySellProfit($pairs, $params));
 
         return true;
     }

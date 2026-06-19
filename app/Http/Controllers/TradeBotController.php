@@ -276,6 +276,7 @@ class TradeBotController extends Controller
             'atr_interval' => ['nullable', 'string', 'max:8'],
             'atr_period' => ['nullable', 'integer', 'min:2', 'max:100'],
             'atr_mult' => ['nullable', 'numeric', 'min:0.1', 'max:20'],
+            'sell_profit_pct' => ['nullable', 'numeric', 'min:0', 'max:200'],
             // rsi / ma / macd / bollinger ortak
             'interval' => ['nullable', 'string', 'max:8'],
             'period' => ['nullable', 'integer', 'min:2', 'max:200'],
@@ -309,6 +310,7 @@ class TradeBotController extends Controller
                 'atr_interval' => $d['atr_interval'] ?? '1h',
                 'atr_period' => (int) ($d['atr_period'] ?? 14),
                 'atr_mult' => (float) ($d['atr_mult'] ?? 1),
+                'sell_profit_pct' => (float) ($d['sell_profit_pct'] ?? 0),
             ],
             'rsi' => [
                 'interval' => $d['interval'] ?? '15m',
