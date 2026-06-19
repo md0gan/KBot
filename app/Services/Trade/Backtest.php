@@ -266,32 +266,58 @@ class Backtest
 
     /* ---- Grid ---- */
 
+    /**
+     * AUTO grid kademeleri (TradeEngine ile ayni matematik): adim yuzdesi kademe basina.
+     * sell = buy*(1+pct); ardisik alislar arasi %pct.
+     *
+     * @return array<int, array{0: float, 1: float}>
+     */
+    protected static function autoGridPairs(float $price, float $pct, int $levels, string $anchor): array
+    {
+        $zero = $anchor === 'below' ? $levels : intdiv($levels, 2);
+        $down = 1 - $pct;
+        $up = 1 + $pct;
+
+        $pairs = [];
+        for ($i = 0; $i < $levels; $i++) {
+            $buy = $price * ($down ** ($zero - $i));
+            $pairs[] = [$buy, $buy * $up];
+        }
+
+        return $pairs;
+    }
+
     protected static function grid(array $p, array $closes, float $budget, float $fee, float $slip): array
     {
         $levels = max(2, (int) ($p['levels'] ?? 5));
         $rangeMode = $p['range_mode'] ?? 'manual';
         $first = $closes[0];
 
+        $anchor = $p['anchor'] ?? 'symmetric';
         if ($rangeMode === 'auto') {
-            $pct = (float) ($p['percent'] ?? 10) / 100;
-            $lower = $first * (1 - $pct);
-            $upper = (($p['anchor'] ?? 'symmetric') === 'below') ? $first : $first * (1 + $pct);
+            $pct = max(0.0001, (float) ($p['percent'] ?? 10) / 100);
+            // Kademe-basina %step (alis->satis %pct, ardisik alislar %pct).
+            $pairs = self::autoGridPairs($first, $pct, $levels, $anchor);
         } else {
             $lower = (float) ($p['lower'] ?? 0);
             $upper = (float) ($p['upper'] ?? 0);
-        }
-        if ($lower <= 0 || $upper <= $lower) {
-            return ['error' => 'Grid aralığı geçersiz (alt/üst fiyat girin veya otomatik seçin).'];
+            if ($lower <= 0 || $upper <= $lower) {
+                return ['error' => 'Grid aralığı geçersiz (alt/üst fiyat girin veya otomatik seçin).'];
+            }
+            $st = ($upper - $lower) / $levels;
+            $pairs = [];
+            for ($i = 0; $i < $levels; $i++) {
+                $b = $lower + $st * $i;
+                $pairs[] = [$b, $b + $st];
+            }
         }
 
-        $step = ($upper - $lower) / $levels;
         $perLevel = $budget / $levels;
         $trailing = (bool) ($p['trailing'] ?? false);
 
         $L = [];
-        for ($i = 0; $i < $levels; $i++) {
-            $b = $lower + $step * $i;
-            $L[] = ['buy' => $b, 'sell' => $b + $step, 'holding' => false, 'qty' => 0.0];
+        foreach ($pairs as [$b, $s]) {
+            $L[] = ['buy' => $b, 'sell' => $s, 'holding' => false, 'qty' => 0.0];
         }
 
         $base = $budget;
@@ -316,13 +342,21 @@ class Backtest
                 $hi = $L[$levels - 1]['sell'];
                 $lo = $L[0]['buy'];
                 if ($flat && ($price > $hi || $price < $lo)) {
-                    $width = $hi - $lo;
-                    $nl = max(0.0, $price - $width / 2);
-                    $st = $width / $levels;
+                    if ($rangeMode === 'auto') {
+                        $pairs = self::autoGridPairs($price, $pct, $levels, $anchor);
+                    } else {
+                        $width = $hi - $lo;
+                        $nl = max(0.0, $price - $width / 2);
+                        $st = $width / $levels;
+                        $pairs = [];
+                        for ($i = 0; $i < $levels; $i++) {
+                            $b = $nl + $st * $i;
+                            $pairs[] = [$b, $b + $st];
+                        }
+                    }
                     $L = [];
-                    for ($i = 0; $i < $levels; $i++) {
-                        $b = $nl + $st * $i;
-                        $L[] = ['buy' => $b, 'sell' => $b + $st, 'holding' => false, 'qty' => 0.0];
+                    foreach ($pairs as [$b, $s]) {
+                        $L[] = ['buy' => $b, 'sell' => $s, 'holding' => false, 'qty' => 0.0];
                     }
                 }
             }

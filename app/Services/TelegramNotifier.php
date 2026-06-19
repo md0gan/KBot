@@ -22,7 +22,8 @@ class TelegramNotifier
     public function __construct(Setting $setting)
     {
         $this->enabled = (bool) $setting->telegram_enabled;
-        $this->token = $setting->telegram_bot_token;
+        // Kullanici kendi botunu girmediyse uygulama geneli ortak bot kullanilir.
+        $this->token = $setting->effectiveTelegramToken();
         $this->chatId = $setting->telegram_chat_id;
         $this->notifyTrades = (bool) $setting->tg_notify_trades;
         $this->notifyErrors = (bool) $setting->tg_notify_errors;

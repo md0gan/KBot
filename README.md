@@ -253,6 +253,7 @@ Tanımlı zamanlamalar (`bootstrap/app.php`):
 | `bot:sync-symbols` | her gün 03:00 | Borsa lot/step/minNotional filtrelerini günceller |
 | `bot:balance-check` | saatlik | Canlı kote (TRY) bakiyesini kontrol eder, azalma/düşük bakiye Telegram bildirimi |
 | `bot:trade` | her dakika | Etkin trade botlarını (grid/rsi/ma) çalıştırır |
+| `bot:telegram-poll` | her dakika | Ortak Telegram botuna gelen "bağla" mesajlarını işler (chat eşleştirme) |
 
 > Komutlar kendi içinde "vakti geldi mi?" kontrolü yaptığından sık çalışmaları güvenlidir.
 > Zamanlayıcı kurulmasa bile panelden **"Botu şimdi çalıştır"** ile elle tetikleyebilirsiniz.
@@ -282,12 +283,14 @@ trade için** kullanabilirsiniz, işlemler birbirine karışmaz.
 Menüden **Trade → + Trade botu ekle**. Stratejiler:
 
 - **Grid:** Fiyat aralığı kademelere bölünür; fiyat bir kademenin alış seviyesine inince alır,
-  bir kademe yukarı (satış seviyesi) çıkınca satar. Aralık **manuel** (alt/üst fiyat) veya
-  **otomatik** (güncel fiyat ±%) belirlenir; bütçe kademelere bölünür. Otomatik aralıkta
-  **başlangıç noktası** seçilir: *alım merdiveni* (tüm kademeler güncel fiyatın altında — bot
-  yalnızca düştükçe alır) ya da *simetrik* (±%). **Trailing** açılırsa, fiyat aralık dışına çıkıp
-  pozisyon boşaldığında grid güncel fiyata göre yeniden konumlanır (piyasayı takip). Bir kademe
-  yalnızca fiyat o seviyeye **yukarıdan inerek** dokununca alır (kurulumda toplu alım olmaz).
+  satış seviyesine çıkınca satar. Aralık **manuel** (alt/üst fiyat) veya **otomatik** belirlenir;
+  bütçe kademelere bölünür. Otomatik modda **Kademe Adımı (%)** girersiniz: bu oran **kademe
+  başınadır** — her alış bir öncekinin %X altında, her satış kendi alışının %X üstündedir
+  (örn. %5 → 5 kademe yaklaşık %25'lik bir bandı kapsar). **Başlangıç noktası** seçilir:
+  *alım merdiveni* (tüm kademeler güncel fiyatın altında — bot yalnızca düştükçe alır) ya da
+  *simetrik* (fiyatın altı ve üstü). **Trailing** açılırsa, fiyat aralık dışına çıkıp pozisyon
+  boşaldığında grid güncel fiyata göre yeniden kurulur (piyasayı takip). Bir kademe yalnızca fiyat
+  o seviyeye **yukarıdan inerek** dokununca alır (kurulumda toplu alım olmaz).
 - **RSI:** RSI aşırı satım eşiğinin altına inince alır, aşırı alım eşiğinin üstüne çıkınca satar.
 - **MA Kesişimi:** Kısa MA uzun MA'yı yukarı keserse alır, aşağı keserse satar (SMA/EMA).
 - **MACD:** MACD çizgisi sinyal çizgisini yukarı keserse alır, aşağı keserse satar.
@@ -314,17 +317,27 @@ Strateji çerçevesi geneldir; ileride yeni stratejiler eklenebilir.
 
 ## Telegram Bildirimleri (opsiyonel)
 
-Bot, yaptığı tüm işlemleri ve hataları Telegram'dan bildirebilir (yalnızca bilgilendirme, işlem yapmaz).
+Bildirimler **hesaba bağlıdır**: her kullanıcı kendi Telegram'ını bağlar ve bildirimleri yalnızca
+**kendi** sohbetine gider (yalnızca bilgilendirme, işlem yapmaz).
 
-1. Telegram'da **@BotFather** ile yeni bot oluşturup **token** alın.
-2. Botunuza bir mesaj gönderin; sonra **@userinfobot** ile veya `https://api.telegram.org/bot<token>/getUpdates`
-   adresinden **chat ID**'nizi öğrenin.
-3. KBot → **Ayarlar → Telegram Bildirimleri**: token + chat ID girin, "Telegram bildirimleri aktif"i
-   işaretleyip kaydedin, sonra **"Test mesajı gönder"** ile doğrulayın.
+**Kurulum — yönetici (tek sefer):** İlk kullanıcı (kurulumda oluşturulan yönetici) **@BotFather**
+ile **tek bir ortak bot** oluşturur ve token'ı **Ayarlar → Uygulama Telegram Botu** alanına girer.
+Token doğrulanır (`getMe`) ve bot kullanıcı adı otomatik kaydedilir.
+
+**Bağlanma — her kullanıcı (tek tık):** **Ayarlar → Telegram Bildirimleri → "Telegram'ı Bağla"**
+→ açılan **"Telegram'da Aç"** ile bota gidip **Başlat**'a basar. Bot `/start <kod>` mesajını alır,
+`bot:telegram-poll` komutu (her dakika çalışır) kodu kullanıcıyla eşleştirir ve o kullanıcının
+chat ID'sini otomatik kaydeder. Sayfa bağlanmayı canlı olarak algılar (≤1 dk) — token/chat ID
+elle girmeye gerek yoktur.
+
+> **Gelişmiş:** Ortak bot yerine kendi botunu kullanmak isteyen kullanıcılar, Telegram kartındaki
+> **Gelişmiş** bölümünden kendi token + chat ID'lerini girebilir; doluysa bildirimler o botla gider.
 
 Bildirim türleri ayrı ayrı açılıp kapatılır: **işlemler** (alım/kar-al/satış), **hatalar**,
 **bakiye azalması / düşük bakiye**. Düşük bakiye eşiği belirleyebilirsiniz; canlı kote (TRY)
 bakiyesi saatlik `bot:balance-check` ile kontrol edilir ve azalma/eşik altı durumunda bildirilir.
+
+> Ortak bot **getUpdates (polling)** ile çalışır; token kaydedilirken varsa webhook otomatik silinir.
 
 ## Kullanım
 
@@ -352,6 +365,7 @@ php artisan bot:evaluate       # Kar-al değerlendirmesi
 php artisan bot:sync-symbols   # Sembol filtrelerini güncelle
 php artisan bot:balance-check  # Canlı bakiye kontrolü + Telegram bildirimi
 php artisan bot:trade          # Trade botlarını (grid/rsi/ma) çalıştır
+php artisan bot:telegram-poll  # Ortak Telegram botuna gelen "bağla" mesajlarını işle
 php artisan bot:dca --user=1   # Sadece belirli kullanıcı için
 php artisan bot:ping           # Botun ayakta olduğunu test et
 ```

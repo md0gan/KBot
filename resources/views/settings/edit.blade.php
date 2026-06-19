@@ -27,6 +27,38 @@
             </div>
         </div>
 
+        {{-- Uygulama (ortak) Telegram botu — yalnizca yonetici --}}
+        @if (auth()->user()->isAdmin())
+            <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-6 mb-6">
+                <h2 class="font-semibold mb-1">Uygulama Telegram Botu <span class="text-xs font-normal text-slate-400">(yönetici)</span></h2>
+                <p class="text-sm text-slate-500 mb-4">
+                    Tüm kullanıcıların <strong>tek tıkla</strong> bağlanacağı ortak bot. Telegram'da <strong>@BotFather</strong> ile bir bot oluşturup
+                    token'ı buraya girin. Her kullanıcının bildirimleri yine yalnızca kendi sohbetine gider.
+                </p>
+
+                @if ($tgAppConfigured)
+                    <div class="flex flex-wrap items-center justify-between gap-2 rounded-lg bg-emerald-50 border border-emerald-100 px-4 py-3 mb-4">
+                        <div class="text-sm text-emerald-800">✓ Ayarlı: <strong>{{ '@'.$tgAppUsername }}</strong></div>
+                        <form method="POST" action="{{ route('settings.telegram-app') }}"
+                              onsubmit="return confirm('Ortak bot kaldırılsın mı? Kullanıcıların bağlantıları çalışmayı durdurur.');">@csrf
+                            <input type="hidden" name="clear_app" value="1">
+                            <button class="text-sm text-red-600 hover:text-red-700">Kaldır</button>
+                        </form>
+                    </div>
+                @endif
+
+                <form method="POST" action="{{ route('settings.telegram-app') }}" class="flex flex-wrap gap-3 items-end">@csrf
+                    <div class="flex-1 min-w-[16rem]">
+                        <label class="block text-sm font-medium text-slate-700 mb-1">Bot Token</label>
+                        <input type="password" name="app_bot_token" autocomplete="off"
+                               placeholder="{{ $tgAppConfigured ? '•••••••• (değiştirmek için yeni token girin)' : 'BotFather token' }}"
+                               class="w-full rounded-lg border-slate-300 font-mono text-sm focus:border-sky-500 focus:ring-sky-500">
+                    </div>
+                    <button class="px-4 py-2 text-sm rounded-lg bg-slate-900 text-white hover:bg-slate-700">Doğrula &amp; kaydet</button>
+                </form>
+            </div>
+        @endif
+
         <form method="POST" action="{{ route('settings.update') }}" class="space-y-6"
               data-old-mode="{{ $setting->trading_mode }}" onsubmit="return kbConfirmLive(this)">
             @csrf @method('PUT')
@@ -100,11 +132,8 @@
 
             {{-- Telegram bildirimleri --}}
             <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-6">
-                <div class="flex items-center justify-between mb-4">
-                    <h2 class="font-semibold">Telegram Bildirimleri</h2>
-                    <button type="submit" form="tg-test-form"
-                            class="px-3 py-1.5 text-sm rounded-lg bg-slate-900 text-white hover:bg-slate-700">Test mesajı gönder</button>
-                </div>
+                <h2 class="font-semibold mb-1">Telegram Bildirimleri</h2>
+                <p class="text-sm text-slate-500 mb-4">Bildirimler hesabınıza bağlı Telegram sohbetine gider — yalnızca size.</p>
 
                 <label class="flex items-center gap-2 mb-4">
                     <input type="hidden" name="telegram_enabled" value="0">
@@ -113,46 +142,84 @@
                     <span class="text-sm text-slate-700">Telegram bildirimleri aktif</span>
                 </label>
 
-                <div class="grid gap-5">
-                    <div>
-                        <label class="block text-sm font-medium text-slate-700 mb-1">Bot Token</label>
-                        <input type="password" name="telegram_bot_token" autocomplete="off"
-                               placeholder="{{ filled($setting->telegram_bot_token) ? '•••••••• (kayıtlı)' : 'BotFather token' }}"
-                               class="w-full rounded-lg border-slate-300 font-mono text-sm focus:border-sky-500 focus:ring-sky-500">
-                        <p class="text-xs text-slate-400 mt-1">Telegram'da <strong>@BotFather</strong> ile bot oluşturup token alın. Boş bırakırsanız mevcut korunur.</p>
-                    </div>
-                    <div>
-                        <label class="block text-sm font-medium text-slate-700 mb-1">Chat ID</label>
-                        <input type="text" name="telegram_chat_id" value="{{ $setting->telegram_chat_id }}"
-                               class="w-full rounded-lg border-slate-300 text-sm focus:border-sky-500 focus:ring-sky-500">
-                        <p class="text-xs text-slate-400 mt-1">Bota bir mesaj yazın; sonra <strong>@userinfobot</strong> ile veya <code>api.telegram.org/bot&lt;token&gt;/getUpdates</code> ile chat ID'nizi öğrenin.</p>
-                    </div>
-
-                    <div class="flex flex-wrap gap-x-6 gap-y-2">
-                        <label class="flex items-center gap-2">
-                            <input type="hidden" name="tg_notify_trades" value="0">
-                            <input type="checkbox" name="tg_notify_trades" value="1" @checked($setting->tg_notify_trades) class="rounded border-slate-300 text-sky-600">
-                            <span class="text-sm text-slate-700">İşlemler (alım/kar-al/satış)</span>
-                        </label>
-                        <label class="flex items-center gap-2">
-                            <input type="hidden" name="tg_notify_errors" value="0">
-                            <input type="checkbox" name="tg_notify_errors" value="1" @checked($setting->tg_notify_errors) class="rounded border-slate-300 text-sky-600">
-                            <span class="text-sm text-slate-700">Hatalar</span>
-                        </label>
-                        <label class="flex items-center gap-2">
-                            <input type="hidden" name="tg_notify_balance" value="0">
-                            <input type="checkbox" name="tg_notify_balance" value="1" @checked($setting->tg_notify_balance) class="rounded border-slate-300 text-sky-600">
-                            <span class="text-sm text-slate-700">Bakiye azalması / düşük bakiye</span>
-                        </label>
-                    </div>
-
-                    <div>
-                        <label class="block text-sm font-medium text-slate-700 mb-1">Düşük bakiye eşiği ({{ $setting->default_quote }}) — opsiyonel</label>
-                        <input type="number" name="low_balance_threshold" step="0.01" min="0" value="{{ $setting->low_balance_threshold }}"
-                               class="w-full md:w-1/2 rounded-lg border-slate-300 text-sm focus:border-sky-500 focus:ring-sky-500">
-                        <p class="text-xs text-slate-400 mt-1">Canlı kote bakiye bu değerin altına düşerse uyarı gönderilir. (Bakiye takibi yalnızca canlı modda çalışır.) Test için <strong>önce kaydedin</strong>.</p>
-                    </div>
+                {{-- Baglanti durumu / tek tikla bagla --}}
+                <div class="rounded-lg border px-4 py-3 mb-5 {{ $setting->isTelegramConnected() ? 'bg-emerald-50 border-emerald-100' : 'bg-slate-50 border-slate-200' }}">
+                    @if ($setting->isTelegramConnected())
+                        <div class="flex flex-wrap items-center justify-between gap-2">
+                            <div class="text-sm text-emerald-800">
+                                ✓ <strong>Bağlı</strong> · sohbet <code>{{ $setting->telegram_chat_id }}</code>
+                                @if ($setting->telegram_connected_at)<span class="text-emerald-600">· {{ $setting->telegram_connected_at->format('d.m.Y H:i') }}</span>@endif
+                            </div>
+                            <div class="flex gap-2">
+                                <button type="submit" form="tg-test-form" class="text-sm px-3 py-1.5 rounded-lg bg-slate-900 text-white hover:bg-slate-700">Test mesajı</button>
+                                <button type="submit" form="tg-disconnect-form" class="text-sm px-3 py-1.5 rounded-lg border border-red-300 text-red-600 hover:bg-red-50">Bağlantıyı kaldır</button>
+                            </div>
+                        </div>
+                    @elseif (session('tg_connect_url'))
+                        <div class="text-sm text-slate-700 mb-3">Telegram'ı açıp <strong>Başlat</strong>'a basın. Bağlantı birkaç saniye içinde otomatik tamamlanır.</div>
+                        <div class="flex flex-wrap items-center gap-3">
+                            <a href="{{ session('tg_connect_url') }}" target="_blank" rel="noopener"
+                               class="px-4 py-2 text-sm rounded-lg bg-sky-600 text-white font-semibold hover:bg-sky-500">Telegram'da Aç →</a>
+                            <span id="tg-wait" class="text-sm text-slate-500">Bağlanması bekleniyor…</span>
+                        </div>
+                    @elseif ($tgAppConfigured)
+                        <div class="flex flex-wrap items-center justify-between gap-2">
+                            <div class="text-sm text-slate-600">Henüz bağlı değil. Tek tıkla bağlanın:</div>
+                            <button type="submit" form="tg-connect-form" class="px-4 py-2 text-sm rounded-lg bg-sky-600 text-white font-semibold hover:bg-sky-500">Telegram'ı Bağla</button>
+                        </div>
+                    @else
+                        <div class="text-sm text-slate-600">
+                            Ortak Telegram botu henüz ayarlanmadı. Yönetici botu tanımlayınca buradan tek tıkla bağlanabilirsiniz —
+                            ya da aşağıdaki <strong>Gelişmiş</strong> bölümünden kendi botunuzu girebilirsiniz.
+                        </div>
+                    @endif
                 </div>
+
+                {{-- Bildirim turleri --}}
+                <div class="flex flex-wrap gap-x-6 gap-y-2">
+                    <label class="flex items-center gap-2">
+                        <input type="hidden" name="tg_notify_trades" value="0">
+                        <input type="checkbox" name="tg_notify_trades" value="1" @checked($setting->tg_notify_trades) class="rounded border-slate-300 text-sky-600">
+                        <span class="text-sm text-slate-700">İşlemler (alım/kar-al/satış)</span>
+                    </label>
+                    <label class="flex items-center gap-2">
+                        <input type="hidden" name="tg_notify_errors" value="0">
+                        <input type="checkbox" name="tg_notify_errors" value="1" @checked($setting->tg_notify_errors) class="rounded border-slate-300 text-sky-600">
+                        <span class="text-sm text-slate-700">Hatalar</span>
+                    </label>
+                    <label class="flex items-center gap-2">
+                        <input type="hidden" name="tg_notify_balance" value="0">
+                        <input type="checkbox" name="tg_notify_balance" value="1" @checked($setting->tg_notify_balance) class="rounded border-slate-300 text-sky-600">
+                        <span class="text-sm text-slate-700">Bakiye azalması / düşük bakiye</span>
+                    </label>
+                </div>
+
+                <div class="mt-5">
+                    <label class="block text-sm font-medium text-slate-700 mb-1">Düşük bakiye eşiği ({{ $setting->default_quote }}) — opsiyonel</label>
+                    <input type="number" name="low_balance_threshold" step="0.01" min="0" value="{{ $setting->low_balance_threshold }}"
+                           class="w-full md:w-1/2 rounded-lg border-slate-300 text-sm focus:border-sky-500 focus:ring-sky-500">
+                    <p class="text-xs text-slate-400 mt-1">Canlı kote bakiye bu değerin altına düşerse uyarı gönderilir. (Yalnızca canlı modda.)</p>
+                </div>
+
+                {{-- Gelismis: kendi botunu kullan --}}
+                <details class="mt-5 border-t border-slate-100 pt-4" @if (filled($setting->telegram_bot_token)) open @endif>
+                    <summary class="text-sm font-medium text-slate-600 cursor-pointer">Gelişmiş: kendi botumu kullan</summary>
+                    <div class="grid gap-5 mt-4">
+                        <p class="text-xs text-slate-400">Ortak bot yerine kendi botunuzu kullanmak isterseniz token ve chat ID girin. Token doluysa bildirimler bu botla gönderilir.</p>
+                        <div>
+                            <label class="block text-sm font-medium text-slate-700 mb-1">Bot Token</label>
+                            <input type="password" name="telegram_bot_token" autocomplete="off"
+                                   placeholder="{{ filled($setting->telegram_bot_token) ? '•••••••• (kayıtlı)' : 'BotFather token' }}"
+                                   class="w-full rounded-lg border-slate-300 font-mono text-sm focus:border-sky-500 focus:ring-sky-500">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-slate-700 mb-1">Chat ID</label>
+                            <input type="text" name="telegram_chat_id" value="{{ $setting->telegram_chat_id }}"
+                                   class="w-full rounded-lg border-slate-300 text-sm focus:border-sky-500 focus:ring-sky-500">
+                            <p class="text-xs text-slate-400 mt-1">Bota bir mesaj yazın; <strong>@userinfobot</strong> ile chat ID'nizi öğrenin. Kaydedip "Test mesajı" ile deneyin.</p>
+                        </div>
+                    </div>
+                </details>
             </div>
 
             <div class="rounded-xl border border-red-200 bg-red-50 p-4 text-sm text-red-700">
@@ -165,8 +232,10 @@
             </div>
         </form>
 
-        {{-- Telegram test (ayrı form; üstteki "Test mesajı gönder" butonu bunu tetikler) --}}
+        {{-- Telegram yardimci formlari (karttaki butonlar bunlari tetikler) --}}
         <form id="tg-test-form" method="POST" action="{{ route('settings.telegram-test') }}" class="hidden">@csrf</form>
+        <form id="tg-connect-form" method="POST" action="{{ route('settings.telegram-connect') }}" class="hidden">@csrf</form>
+        <form id="tg-disconnect-form" method="POST" action="{{ route('settings.telegram-disconnect') }}" class="hidden">@csrf</form>
     </div>
 
     <script>
@@ -178,5 +247,30 @@
             }
             return true;
         }
+
+        // "Telegram'da Aç" gosterildiyse, baglanmayi canli olarak bekle.
+        (function () {
+            var wait = document.getElementById('tg-wait');
+            if (!wait) return;
+            var url = "{{ route('settings.telegram-status') }}";
+            var tries = 0, max = 45; // ~2.5 dk
+            var timer = setInterval(function () {
+                tries++;
+                fetch(url, { headers: { 'Accept': 'application/json' }, credentials: 'same-origin' })
+                    .then(function (r) { return r.json(); })
+                    .then(function (d) {
+                        if (d && d.connected) {
+                            clearInterval(timer);
+                            wait.textContent = '✓ Bağlandı! Sayfa yenileniyor…';
+                            wait.className = 'text-sm text-emerald-600 font-medium';
+                            setTimeout(function () { window.location.reload(); }, 900);
+                        } else if (tries >= max) {
+                            clearInterval(timer);
+                            wait.textContent = 'Hâlâ bağlanmadı. "Başlat"a bastığınızdan emin olun, sonra sayfayı yenileyin.';
+                        }
+                    })
+                    .catch(function () {});
+            }, 3500);
+        })();
     </script>
 @endsection

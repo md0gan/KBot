@@ -22,6 +22,8 @@ class Setting extends Model
         'telegram_enabled',
         'telegram_bot_token',
         'telegram_chat_id',
+        'telegram_connect_token',
+        'telegram_connected_at',
         'tg_notify_trades',
         'tg_notify_errors',
         'tg_notify_balance',
@@ -51,6 +53,7 @@ class Setting extends Model
             'low_balance_threshold' => 'float',
             'last_quote_balance' => 'float',
             'api_verified_at' => 'datetime',
+            'telegram_connected_at' => 'datetime',
         ];
     }
 
@@ -74,10 +77,29 @@ class Setting extends Model
         return filled($this->api_key) && filled($this->api_secret);
     }
 
+    /**
+     * Bildirim gonderiminde kullanilacak token: kullanici kendi botunu girdiyse
+     * onu, aksi halde uygulama geneli ortak bot token'ini kullanir.
+     */
+    public function effectiveTelegramToken(): ?string
+    {
+        if (filled($this->telegram_bot_token)) {
+            return $this->telegram_bot_token;
+        }
+
+        return AppSetting::get('telegram_app_bot_token');
+    }
+
     public function hasTelegram(): bool
     {
         return (bool) $this->telegram_enabled
-            && filled($this->telegram_bot_token)
+            && filled($this->effectiveTelegramToken())
             && filled($this->telegram_chat_id);
+    }
+
+    /** Telegram sohbeti bagli mi (chat_id yakalanmis ve bekleyen kod yok). */
+    public function isTelegramConnected(): bool
+    {
+        return filled($this->telegram_chat_id) && blank($this->telegram_connect_token);
     }
 }

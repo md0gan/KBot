@@ -349,35 +349,73 @@ class TradeEngine
             if ($price <= 0) {
                 return false;
             }
-            $pct = (float) ($params['percent'] ?? 10) / 100;
-            $lower = $price * (1 - $pct);
-            // "below": grid tamamen guncel fiyatin altinda (alim merdiveni); "symmetric": ±%
-            $upper = (($params['anchor'] ?? 'symmetric') === 'below') ? $price : $price * (1 + $pct);
+            $pct = max(0.0001, (float) ($params['percent'] ?? 10) / 100);
+            $pairs = $this->autoGridPairs($price, $pct, $levels, $params['anchor'] ?? 'symmetric');
         } else {
             $lower = (float) ($params['lower'] ?? 0);
             $upper = (float) ($params['upper'] ?? 0);
+            if ($lower <= 0 || $upper <= $lower) {
+                return false;
+            }
+            // Manuel: verilen aralik kademelere esit (dogrusal) bolunur.
+            $step = ($upper - $lower) / $levels;
+            $pairs = [];
+            for ($i = 0; $i < $levels; $i++) {
+                $buy = $lower + $step * $i;
+                $pairs[] = [$buy, $buy + $step];
+            }
         }
 
-        if ($lower <= 0 || $upper <= $lower) {
+        if (empty($pairs)) {
             return false;
         }
 
-        $step = ($upper - $lower) / $levels;
-        $bot->gridLevels()->delete();
+        $this->persistGridLevels($bot, $pairs);
+
+        return true;
+    }
+
+    /**
+     * AUTO grid kademeleri: adim YUZDESI kademe basinadir.
+     * - Alis -> Satis arasi tam %pct (sell = buy * (1+pct)).
+     * - Ardisik alis fiyatlari arasi tam %pct (her alt kademe ust kademenin %pct altinda).
+     * anchor=below   : tum merdiven guncel fiyatin altinda (en ust kademe fiyatin %pct altinda).
+     * anchor=symmetric: kademeler fiyatin altinda ve ustunde dengeli dagilir.
+     *
+     * @return array<int, array{0: float, 1: float}> Artan sirada [buy, sell] ciftleri.
+     */
+    protected function autoGridPairs(float $price, float $pct, int $levels, string $anchor): array
+    {
+        // buy_i = price * (1-pct)^(zero - i)  ->  her kademe bir ust kademenin %pct altinda
+        // zero: buy = price olacak (sanal) indeks. below'da tum kademeler altta kalir.
+        $zero = $anchor === 'below' ? $levels : intdiv($levels, 2);
+        $down = 1 - $pct;
+        $up = 1 + $pct;
+
+        $pairs = [];
         for ($i = 0; $i < $levels; $i++) {
-            $buy = $lower + $step * $i;
+            $buy = $price * ($down ** ($zero - $i));
+            $pairs[] = [$buy, $buy * $up];
+        }
+
+        return $pairs;
+    }
+
+    /** Verilen [buy, sell] ciftlerini grid kademesi olarak yazar (eskiler silinir). */
+    protected function persistGridLevels(TradeBot $bot, array $pairs): void
+    {
+        $bot->gridLevels()->delete();
+        foreach (array_values($pairs) as $i => [$buy, $sell]) {
             TradeGridLevel::create([
                 'trade_bot_id' => $bot->id,
                 'level_index' => $i,
                 'buy_price' => $buy,
-                'sell_price' => $buy + $step,
+                'sell_price' => $sell,
                 'status' => 'waiting_buy',
                 'quantity' => 0,
                 'buy_order_quote' => 0,
             ]);
         }
-
-        return true;
     }
 
     /**
@@ -386,6 +424,22 @@ class TradeEngine
      */
     public function recenterGrid(TradeBot $bot, float $price): bool
     {
+        if ($price <= 0) {
+            return false;
+        }
+
+        $params = $bot->params ?? [];
+
+        // AUTO modda: kademe-basina %step korunarak guncel fiyata gore yeniden kur.
+        if (($params['range_mode'] ?? 'manual') === 'auto') {
+            $pct = max(0.0001, (float) ($params['percent'] ?? 10) / 100);
+            $levels = max(2, (int) ($params['levels'] ?? 5));
+            $this->persistGridLevels($bot, $this->autoGridPairs($price, $pct, $levels, $params['anchor'] ?? 'symmetric'));
+
+            return true;
+        }
+
+        // MANUEL modda: mevcut genisligi koruyarak kaydir.
         $levels = $bot->gridLevels()->orderBy('level_index')->get();
         if ($levels->isEmpty()) {
             return $this->buildGrid($bot);
@@ -395,29 +449,21 @@ class TradeEngine
         $low = (float) $levels->first()->buy_price;
         $high = (float) $levels->last()->sell_price;
         $width = $high - $low;
-        if ($width <= 0 || $price <= 0) {
+        if ($width <= 0) {
             return false;
         }
 
-        // "below" ise gridi guncel fiyatin altina, degilse fiyatin etrafina ortala
         $newLower = ($bot->param('anchor', 'symmetric') === 'below')
             ? max(0.0, $price - $width)
             : max(0.0, $price - $width / 2);
         $step = $width / $count;
 
-        $bot->gridLevels()->delete();
+        $pairs = [];
         for ($i = 0; $i < $count; $i++) {
             $buy = $newLower + $step * $i;
-            TradeGridLevel::create([
-                'trade_bot_id' => $bot->id,
-                'level_index' => $i,
-                'buy_price' => $buy,
-                'sell_price' => $buy + $step,
-                'status' => 'waiting_buy',
-                'quantity' => 0,
-                'buy_order_quote' => 0,
-            ]);
+            $pairs[] = [$buy, $buy + $step];
         }
+        $this->persistGridLevels($bot, $pairs);
 
         return true;
     }

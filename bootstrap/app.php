@@ -33,6 +33,9 @@ return Application::configure(basePath: dirname(__DIR__))
 
         // TRADE/SCALP modu: etkin trade botlarini her dakika calistir (yatirimdan bagimsiz).
         $schedule->command('bot:trade')->everyMinute()->withoutOverlapping();
+
+        // Ortak Telegram botuna gelen "bagla" mesajlarini yakala (her dakika).
+        $schedule->command('bot:telegram-poll')->everyMinute()->withoutOverlapping();
     })
     ->withExceptions(function (Exceptions $exceptions): void {
         //

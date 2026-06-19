@@ -98,7 +98,7 @@
             <select name="range_mode" id="grid-range-mode" onchange="kbUpdateGridRange()"
                     class="w-full rounded-lg border-slate-300 focus:border-sky-500 focus:ring-sky-500">
                 <option value="manual" @selected(old('range_mode', $p['range_mode'] ?? 'manual') === 'manual')>Manuel (alt/üst fiyat)</option>
-                <option value="auto" @selected(old('range_mode', $p['range_mode'] ?? 'manual') === 'auto')>Otomatik (güncel fiyat ±%)</option>
+                <option value="auto" @selected(old('range_mode', $p['range_mode'] ?? 'manual') === 'auto')>Otomatik (kademe adımı %)</option>
             </select>
         </div>
         <div>
@@ -117,9 +117,10 @@
                    class="w-full rounded-lg border-slate-300 focus:border-sky-500 focus:ring-sky-500">
         </div>
         <div class="grid-auto">
-            <label class="block text-sm font-medium text-slate-700 mb-1">Yüzde Aralık (±%)</label>
+            <label class="block text-sm font-medium text-slate-700 mb-1">Kademe Adımı (%)</label>
             <input type="number" name="percent" step="0.1" min="0.1" max="90" value="{{ old('percent', $p['percent'] ?? 10) }}"
                    class="w-full rounded-lg border-slate-300 focus:border-sky-500 focus:ring-sky-500">
+            <p class="text-xs text-slate-400 mt-1">Her kademe arası ve alış→satış farkı bu orandır. Örn. %5: her alış bir öncekinin %5 altında, satış alışın %5 üstünde.</p>
         </div>
         <div class="grid-auto">
             <label class="block text-sm font-medium text-slate-700 mb-1">Başlangıç Noktası</label>

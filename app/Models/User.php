@@ -37,6 +37,15 @@ class User extends Authenticatable
         return $this->hasOne(Setting::class);
     }
 
+    /**
+     * Yonetici mi? Kurulumda olusturulan ilk kullanici (id=1) yoneticidir;
+     * uygulama geneli ortak Telegram botunu yalnizca yonetici ayarlayabilir.
+     */
+    public function isAdmin(): bool
+    {
+        return (int) $this->id === 1;
+    }
+
     public function coins(): HasMany
     {
         return $this->hasMany(Coin::class);

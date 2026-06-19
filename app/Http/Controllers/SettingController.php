@@ -3,19 +3,23 @@
 namespace App\Http\Controllers;
 
 use App\Services\BinanceTrClient;
+use App\Services\TelegramConnectService;
 use App\Services\TelegramNotifier;
 use App\Services\TradingBot;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\View\View;
 
 class SettingController extends Controller
 {
-    public function edit(Request $request): View
+    public function edit(Request $request, TelegramConnectService $connect): View
     {
         $setting = $request->user()->settings();
+        $tgAppConfigured = $connect->isConfigured();
+        $tgAppUsername = $connect->appUsername();
 
-        return view('settings.edit', compact('setting'));
+        return view('settings.edit', compact('setting', 'tgAppConfigured', 'tgAppUsername'));
     }
 
     public function update(Request $request): RedirectResponse
@@ -61,7 +65,11 @@ class SettingController extends Controller
         $setting->trading_mode = $data['trading_mode'];
         $setting->bot_enabled = $request->boolean('bot_enabled');
         $setting->telegram_enabled = $request->boolean('telegram_enabled');
-        $setting->telegram_chat_id = $data['telegram_chat_id'] ?: null;
+        // chat_id yalnizca form bu alani gonderdiyse guncellenir; ortak-bot ile
+        // baglanan kullanicinin yakalanmis chat_id'sini yanlislikla silmeyiz.
+        if ($request->has('telegram_chat_id')) {
+            $setting->telegram_chat_id = $data['telegram_chat_id'] ?: null;
+        }
         $setting->tg_notify_trades = $request->boolean('tg_notify_trades');
         $setting->tg_notify_errors = $request->boolean('tg_notify_errors');
         $setting->tg_notify_balance = $request->boolean('tg_notify_balance');
@@ -110,15 +118,76 @@ class SettingController extends Controller
     {
         $setting = $request->user()->settings();
 
-        if (! filled($setting->telegram_bot_token) || ! filled($setting->telegram_chat_id)) {
-            return back()->with('error', 'Önce Telegram bot token ve chat ID girip kaydedin.');
+        if (! filled($setting->effectiveTelegramToken()) || ! filled($setting->telegram_chat_id)) {
+            return back()->with('error', 'Önce Telegram\'ı bağlayın (veya kendi bot token + chat ID\'nizi girip kaydedin).');
         }
 
         $ok = TelegramNotifier::fromSetting($setting)->sendTest();
 
         return $ok
             ? back()->with('status', 'Telegram test mesajı gönderildi. Sohbeti kontrol edin.')
-            : back()->with('error', 'Telegram mesajı gönderilemedi. Token/Chat ID ve botu (botla en az bir kez konuştuğunuzu) kontrol edin.');
+            : back()->with('error', 'Telegram mesajı gönderilemedi. Bağlantıyı (veya token/chat ID) kontrol edin.');
+    }
+
+    /**
+     * Kullanici icin tek kullanimlik baglama kodu uretir; ortak bot deep-link'ini
+     * session'a koyar (sayfa "Telegram'da Aç" butonunu gosterir).
+     */
+    public function telegramConnect(Request $request, TelegramConnectService $connect): RedirectResponse
+    {
+        $url = $connect->startConnect($request->user()->settings());
+
+        if (! $url) {
+            return back()->with('error', 'Ortak Telegram botu henüz ayarlanmadı. Yöneticinin uygulama botunu tanımlaması gerekir.');
+        }
+
+        return back()->with('tg_connect_url', $url);
+    }
+
+    /** Kullanicinin Telegram baglantisini kaldirir. */
+    public function telegramDisconnect(Request $request, TelegramConnectService $connect): RedirectResponse
+    {
+        $connect->disconnect($request->user()->settings());
+
+        return back()->with('status', 'Telegram bağlantısı kaldırıldı.');
+    }
+
+    /** Ayar sayfasinin canli durum sorgusu: bekleyen baglamayi yakalamayi dener. */
+    public function telegramStatus(Request $request, TelegramConnectService $connect): JsonResponse
+    {
+        $setting = $request->user()->settings();
+
+        if (filled($setting->telegram_connect_token)) {
+            $connect->poll();          // cron'u beklemeden hemen yakalamayi dene
+            $setting->refresh();
+        }
+
+        return response()->json([
+            'connected' => $setting->isTelegramConnected(),
+            'chat_id' => $setting->telegram_chat_id,
+        ]);
+    }
+
+    /** Yonetici: uygulama geneli ortak Telegram botunu tanimlar/kaldirir. */
+    public function telegramApp(Request $request, TelegramConnectService $connect): RedirectResponse
+    {
+        abort_unless($request->user()->isAdmin(), 403);
+
+        if ($request->boolean('clear_app')) {
+            $connect->clearApp();
+
+            return back()->with('status', 'Uygulama Telegram botu kaldırıldı.');
+        }
+
+        $data = $request->validate([
+            'app_bot_token' => ['required', 'string', 'max:255'],
+        ]);
+
+        $res = $connect->configureApp($data['app_bot_token']);
+
+        return $res['ok']
+            ? back()->with('status', 'Uygulama botu ayarlandı: @'.$res['username'])
+            : back()->with('error', 'Bot ayarlanamadı: '.$res['error']);
     }
 
     public function toggleMode(Request $request): RedirectResponse
