@@ -247,6 +247,143 @@ class TradeBotController extends Controller
         return view('trade.backtest', compact('tradeBot', 'interval', 'bars', 'fee', 'slip', 'result', 'error'));
     }
 
+    /**
+     * Parametre optimizasyonu: stratejiye gore bir parametre izgarasi taranir,
+     * her kombinasyon ayni gecmis veri uzerinde backtest edilir ve Toplam K/Z'ye
+     * gore siralanir. Botun diger ayarlari sabit kalir; SONUC OTOMATIK UYGULANMAZ.
+     */
+    public function optimize(Request $request, TradeBot $tradeBot): View
+    {
+        $this->authorizeBot($request, $tradeBot);
+
+        $interval = (string) $request->input('interval', $tradeBot->param('interval', '1h'));
+        $bars = max(80, min(1000, (int) $request->input('bars', 500)));
+        $fee = max(0.0, min(5.0, (float) $request->input('fee', 0.1)));
+        $slip = max(0.0, min(5.0, (float) $request->input('slip', 0.05)));
+
+        $results = [];
+        $error = null;
+        $tested = 0;
+
+        if ($request->filled('run')) {
+            try {
+                $closes = (new TradeEngine($request->user()))->client()
+                    ->getCloses($tradeBot->symbol, $interval, $bars, $tradeBot->symbol_type ?? 1);
+
+                if (count($closes) < 50) {
+                    $error = 'Yeterli geçmiş veri çekilemedi (sembol / zaman dilimi / borsa erişimi?).';
+                } else {
+                    $base = $tradeBot->params ?? [];
+                    $budget = (float) $tradeBot->budget;
+                    $orderSize = (float) $tradeBot->order_size;
+
+                    foreach ($this->optimizeCombos($tradeBot->strategy, $base) as $combo) {
+                        $r = Backtest::run($tradeBot->strategy, array_merge($base, $combo), $closes, $budget, $orderSize, $fee / 100, $slip / 100);
+                        if (isset($r['error'])) {
+                            continue;
+                        }
+                        $tested++;
+                        $results[] = ['params' => $combo, 'm' => $r];
+                    }
+
+                    usort($results, fn ($a, $b) => $b['m']['total_pl'] <=> $a['m']['total_pl']);
+                    $results = array_slice($results, 0, 20);
+
+                    if (empty($results)) {
+                        $error = 'Bu strateji için taranacak kombinasyon bulunamadı.';
+                    }
+                }
+            } catch (\Throwable $e) {
+                $error = $e->getMessage();
+            }
+        }
+
+        return view('trade.optimize', compact('tradeBot', 'interval', 'bars', 'fee', 'slip', 'results', 'error', 'tested'));
+    }
+
+    /**
+     * Stratejiye gore taranacak parametre kombinasyonlari (her biri base ile birlestirilir).
+     *
+     * @return array<int, array<string, int|float>>
+     */
+    protected function optimizeCombos(string $strategy, array $base): array
+    {
+        $combos = [];
+
+        switch ($strategy) {
+            case 'grid':
+                $rangeMode = $base['range_mode'] ?? 'manual';
+                $levelsSet = [5, 8, 12];
+                $sellSet = [0, 5, 10];
+                if ($rangeMode === 'auto') {
+                    foreach ([2, 3, 5, 8] as $pct) {
+                        foreach ($levelsSet as $lv) {
+                            foreach ($sellSet as $sp) {
+                                $combos[] = ['percent' => $pct, 'levels' => $lv, 'sell_profit_pct' => $sp];
+                            }
+                        }
+                    }
+                } elseif ($rangeMode === 'atr') {
+                    foreach ([0.5, 1.0, 1.5, 2.0] as $m) {
+                        foreach ($levelsSet as $lv) {
+                            foreach ($sellSet as $sp) {
+                                $combos[] = ['atr_mult' => $m, 'levels' => $lv, 'sell_profit_pct' => $sp];
+                            }
+                        }
+                    }
+                } else {
+                    foreach ($levelsSet as $lv) {
+                        foreach ($sellSet as $sp) {
+                            $combos[] = ['levels' => $lv, 'sell_profit_pct' => $sp];
+                        }
+                    }
+                }
+                break;
+
+            case 'rsi':
+                foreach ([7, 14, 21] as $p) {
+                    foreach ([20, 25, 30] as $os) {
+                        foreach ([70, 75, 80] as $ob) {
+                            $combos[] = ['period' => $p, 'oversold' => $os, 'overbought' => $ob];
+                        }
+                    }
+                }
+                break;
+
+            case 'ma_cross':
+                foreach ([5, 9, 12, 20] as $s) {
+                    foreach ([21, 30, 50, 100] as $l) {
+                        if ($s < $l) {
+                            $combos[] = ['short' => $s, 'long' => $l];
+                        }
+                    }
+                }
+                break;
+
+            case 'macd':
+                foreach ([8, 12] as $f) {
+                    foreach ([21, 26] as $sl) {
+                        foreach ([7, 9] as $sg) {
+                            if ($f < $sl) {
+                                $combos[] = ['fast' => $f, 'slow' => $sl, 'signal' => $sg];
+                            }
+                        }
+                    }
+                }
+                break;
+
+            case 'bollinger':
+                foreach ([14, 20, 30] as $p) {
+                    foreach ([1.5, 2.0, 2.5] as $k) {
+                        $combos[] = ['period' => $p, 'k' => $k];
+                    }
+                }
+                break;
+        }
+
+        return $combos;
+    }
+
     /* ------------------------------------------------------------------ */
 
     protected function validateData(Request $request): array
