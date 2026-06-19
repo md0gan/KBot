@@ -20,8 +20,8 @@
                     <a href="{{ route('dashboard') }}" class="font-bold text-lg tracking-tight">
                         <span class="text-brand">K</span>Bot
                     </a>
+                    @php($nav = ['dashboard' => 'Panel', 'coins.index' => 'Coinler', 'trades.index' => 'İşlemler', 'logs.index' => 'Loglar', 'settings.edit' => 'Ayarlar', 'account.edit' => 'Hesap'])
                     <div class="hidden md:flex items-center gap-1 text-sm">
-                        @php($nav = ['dashboard' => 'Panel', 'coins.index' => 'Coinler', 'trades.index' => 'İşlemler', 'logs.index' => 'Loglar', 'settings.edit' => 'Ayarlar', 'account.edit' => 'Hesap'])
                         @foreach ($nav as $route => $label)
                             <a href="{{ route($route) }}"
                                class="px-3 py-2 rounded-md hover:bg-slate-800 {{ request()->routeIs($route) || request()->routeIs(str_replace('.index','.*', $route)) ? 'bg-slate-800 text-white' : 'text-slate-300' }}">
@@ -41,7 +41,24 @@
                     <form method="POST" action="{{ route('logout') }}">@csrf
                         <button class="px-3 py-1.5 rounded-md bg-slate-800 hover:bg-slate-700">Çıkış</button>
                     </form>
+                    <button type="button" aria-label="Menü"
+                            onclick="document.getElementById('mobile-menu').classList.toggle('hidden')"
+                            class="md:hidden p-2 -mr-1 rounded-md hover:bg-slate-800">
+                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"/>
+                        </svg>
+                    </button>
                 </div>
+            </div>
+
+            {{-- Mobil menü (hamburger ile açılır) --}}
+            <div id="mobile-menu" class="hidden md:hidden border-t border-slate-800 py-2 space-y-1">
+                @foreach ($nav as $route => $label)
+                    <a href="{{ route($route) }}"
+                       class="block px-3 py-2 rounded-md text-sm {{ request()->routeIs($route) || request()->routeIs(str_replace('.index', '.*', $route)) ? 'bg-slate-800 text-white' : 'text-slate-300 hover:bg-slate-800' }}">
+                        {{ $label }}
+                    </a>
+                @endforeach
             </div>
         </div>
     </nav>
