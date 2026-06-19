@@ -35,6 +35,11 @@ use App\Services\Trade\TradeEngine;
  * Alım tutarı her dipte sabittir (effectiveOrderSize); toplam bütçe tavandır:
  * kalan bütçe bir alımı karşılamıyorsa o tur alım yapılmaz. Merkezî Zarar Durdurma
  * ve Trailing Take-Profit (TradeEngine) tüm pozisyona ek koruma olarak çalışır.
+ *
+ * HIZLI DÜŞÜŞ FRENİ (opsiyonel): v2_max_buys > 0 ise pencerede (v2_buy_window_h saat)
+ * en fazla v2_max_buys alıma izin verilir. Limit dolunca o tur yeni alım yapılmaz
+ * (satışlar etkilenmez), böylece sert bir çöküşte bütçe tek seferde değil kademeli
+ * yatırılır ("düşen bıçağı tutma" riskini azaltır).
  */
 class GridV2Strategy implements Strategy
 {
@@ -124,12 +129,32 @@ class GridV2Strategy implements Strategy
         $remaining = $cap > 0 ? max(0.0, $cap - (float) ($pos?->cost_basis ?? 0)) : INF;
         $perBuy = $engine->effectiveOrderSize($bot);
 
+        // 4b) Hızlı düşüş freni: pencerede (son X saat) en fazla N alıma izin ver.
+        // v2_max_buys <= 0 → limit kapalı. Limit dolduğunda bu tur yeni alım yapılmaz
+        // (satışlar etkilenmez), böylece crash'te bütçe kademeli yatırılır.
+        $maxBuys = (int) $bot->param('v2_max_buys', 0);
+        $windowH = (float) $bot->param('v2_buy_window_h', 4);
+        $allowance = PHP_INT_MAX;
+        if ($maxBuys > 0 && $windowH > 0) {
+            $recent = $bot->orders()
+                ->where('side', 'BUY')
+                ->where('executed_at', '>=', now()->subMinutes((int) round($windowH * 60)))
+                ->count();
+            $allowance = max(0, $maxBuys - $recent);
+        }
+        $skippedByLimit = 0;
+
         // 5) Tüm seviyeleri tara: alış (aşağı kesişim) / satış (yukarı kesişim).
         $levels = $bot->gridLevels()->get();
         foreach ($levels as $level) {
             if ($level->status === 'waiting_buy') {
                 $buyCross = $prev !== null && $prev > $level->buy_price && $price <= $level->buy_price;
                 if (! $buyCross) {
+                    continue;
+                }
+                if ($allowance <= 0) {
+                    $skippedByLimit++; // hız limiti dolu: bu seviyeyi atla (satışlar sürer)
+
                     continue;
                 }
                 if ($perBuy <= 0 || $remaining + 1e-9 < $perBuy) {
@@ -143,6 +168,7 @@ class GridV2Strategy implements Strategy
                     $level->quantity = $order->quantity;
                     $level->buy_order_quote = $order->quote_amount;
                     $level->save();
+                    $allowance--;
                     $remaining -= (float) $order->quote_amount;
                     $lines[] = "Grid v2 AL L{$level->level_index} @ ".kb_price($price);
                 }
@@ -163,6 +189,10 @@ class GridV2Strategy implements Strategy
                     $lines[] = "Grid v2 SAT L{$level->level_index} @ ".kb_price($price);
                 }
             }
+        }
+
+        if ($skippedByLimit > 0) {
+            $lines[] = "Grid v2: hız limiti — {$skippedByLimit} seviye atlandı (son ".rtrim(rtrim(number_format($windowH, 1, '.', ''), '0'), '.')." saatte en fazla {$maxBuys} alım).";
         }
 
         return $lines ?: ['Grid v2: işlem yok (çapa '.kb_price($anchor).', fiyat seviyelere değmedi).'];

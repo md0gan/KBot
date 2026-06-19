@@ -19,6 +19,7 @@ class Backtest
         float $orderSize,
         float $feePct = 0.0,
         float $slipPct = 0.0,
+        ?string $interval = null,
     ): array {
         $closes = array_values(array_filter(array_map('floatval', $closes), fn ($c) => $c > 0));
         $n = count($closes);
@@ -29,7 +30,7 @@ class Backtest
 
         $sim = match ($strategy) {
             'grid' => self::grid($params, $closes, $budget, $feePct, $slipPct),
-            'grid_v2' => self::gridV2($params, $closes, $budget, $orderSize, $feePct, $slipPct),
+            'grid_v2' => self::gridV2($params, $closes, $budget, $orderSize, $feePct, $slipPct, $interval),
             'rsi' => self::single(self::rsiSignals($params, $closes), $closes, $orderSize, $feePct, $slipPct),
             'ma_cross' => self::single(self::maSignals($params, $closes), $closes, $orderSize, $feePct, $slipPct),
             'macd' => self::single(self::macdSignals($params, $closes), $closes, $orderSize, $feePct, $slipPct),
@@ -343,14 +344,26 @@ class Backtest
 
     /* ---- Grid v2 (sabit çapalı dip-alım merdiveni) ---- */
 
+    /** Zaman dilimini dakikaya çevirir (hız limiti penceresini bara çevirmek için). 0 = bilinmiyor. */
+    protected static function intervalMinutes(?string $interval): int
+    {
+        return match ($interval) {
+            '1m' => 1, '3m' => 3, '5m' => 5, '15m' => 15, '30m' => 30,
+            '1h' => 60, '2h' => 120, '4h' => 240, '6h' => 360, '8h' => 480, '12h' => 720,
+            '1d' => 1440, '3d' => 4320, '1w' => 10080,
+            default => 0,
+        };
+    }
+
     /**
      * Grid v2 backtest: canlı GridV2Strategy ile birebir mantık. Çapa = ilk kapanış;
      * seviyeler çapanın altına doğrusal (buy = çapa·(1−k·step)); fiyat boş bir seviyeye
      * aşağı kesişimle dokununca sabit tutar (orderSize) alır; lot satış hedefine
      * (sell_profit_pct>0 ? alış·(1+%X) : alış·(1+step)) yukarı kesişimle ulaşınca satar.
      * Toplam bütçe nakit tavanıdır (kalan nakit alımı karşılamazsa o seviye atlanır).
+     * Hızlı düşüş freni (v2_max_buys/v2_buy_window_h) bar penceresiyle modellenir.
      */
-    protected static function gridV2(array $p, array $closes, float $budget, float $orderSize, float $fee, float $slip): array
+    protected static function gridV2(array $p, array $closes, float $budget, float $orderSize, float $fee, float $slip, ?string $interval = null): array
     {
         $step = (float) ($p['v2_step_pct'] ?? 1) / 100;
         if ($step <= 0) {
@@ -364,6 +377,15 @@ class Backtest
         if ($kFloor < 1 || $anchor <= 0) {
             return ['error' => 'Grid v2 adımı çok büyük (geçerli seviye yok).'];
         }
+
+        // Hızlı düşüş freni: pencere (saat) bar sayısına çevrilir. interval yoksa limit yok.
+        $maxBuys = (int) ($p['v2_max_buys'] ?? 0);
+        $windowH = (float) ($p['v2_buy_window_h'] ?? 4);
+        $barMin = self::intervalMinutes($interval);
+        $windowBars = ($maxBuys > 0 && $windowH > 0 && $barMin > 0)
+            ? max(1, (int) ceil($windowH * 60 / $barMin))
+            : 0; // 0 = limit kapalı
+        $buyBars = []; // alımların yapıldığı bar indeksleri (kayan pencere)
 
         $perBuy = $orderSize > 0 ? $orderSize : $budget;
         $base = $budget;
@@ -406,14 +428,29 @@ class Backtest
                 }
             }
 
+            // Hız limiti: bu bardaki pencerede kalan alım hakkı.
+            $allow = PHP_INT_MAX;
+            if ($windowBars > 0) {
+                $cut = $idx - $windowBars;
+                $recent = 0;
+                foreach ($buyBars as $bi) {
+                    if ($bi > $cut) {
+                        $recent++;
+                    }
+                }
+                $allow = max(0, $maxBuys - $recent);
+            }
+
             foreach ($L as $k => $l) {
                 if (! $l['holding']) {
                     $buyCross = $prev !== null && $prev > $l['buy'] && $price <= $l['buy'];
-                    if ($buyCross && $perBuy > 0 && $cash + 1e-9 >= $perBuy) {
+                    if ($buyCross && $allow > 0 && $perBuy > 0 && $cash + 1e-9 >= $perBuy) {
                         $cash -= $perBuy;
                         $L[$k]['holding'] = true;
                         $L[$k]['qty'] = ($perBuy * (1 - $fee)) / ($price * (1 + $slip));
                         $L[$k]['cost'] = $perBuy;
+                        $allow--;
+                        $buyBars[] = $idx;
                     }
                 } else {
                     $sellCross = $prev !== null && $prev < $l['sell'] && $price >= $l['sell'];

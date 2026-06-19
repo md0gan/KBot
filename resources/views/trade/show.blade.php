@@ -238,6 +238,9 @@
                             <div class="flex justify-between"><dt class="text-slate-500">Satış hedefi</dt><dd class="text-emerald-600">bir adım yukarı (+%{{ $v2step }})</dd></div>
                         @endif
                         <div class="flex justify-between"><dt class="text-slate-500">Alım başına</dt><dd>{{ $tradeBot->order_size > 0 ? kb_money($tradeBot->order_size) : 'bütçenin tamamı' }}</dd></div>
+                        @if (($p['v2_max_buys'] ?? 0) > 0)
+                            <div class="flex justify-between"><dt class="text-slate-500">Hız limiti</dt><dd class="text-amber-600">{{ rtrim(rtrim(number_format($p['v2_buy_window_h'] ?? 4, 1, '.', ''), '0'), '.') }} saatte {{ (int) $p['v2_max_buys'] }} alım</dd></div>
+                        @endif
                     @elseif ($tradeBot->strategy === 'rsi')
                         <div class="flex justify-between"><dt class="text-slate-500">Zaman / Periyot</dt><dd>{{ $p['interval'] ?? '15m' }} / {{ $p['period'] ?? 14 }}</dd></div>
                         <div class="flex justify-between"><dt class="text-slate-500">Eşikler</dt><dd>{{ $p['oversold'] ?? 30 }} / {{ $p['overbought'] ?? 70 }}</dd></div>

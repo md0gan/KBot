@@ -219,6 +219,24 @@
             <p class="text-xs text-slate-400 mt-1">0 ise her lot bir adım yukarıda (alış × (1+%adım)) satılır. &gt;0 ise alış × (1+%X) hedefiyle satılır.</p>
         </div>
     </div>
+
+    <div class="mt-4 rounded-lg border border-amber-200 bg-amber-50 p-3">
+        <p class="text-xs font-semibold text-amber-800 mb-2">Hızlı Düşüş Freni (opsiyonel)</p>
+        <div class="grid md:grid-cols-2 gap-5">
+            <div>
+                <label class="block text-sm font-medium text-slate-700 mb-1">Pencerede Maks. Alım (0 = kapalı)</label>
+                <input type="number" name="v2_max_buys" min="0" max="1000" value="{{ old('v2_max_buys', $p['v2_max_buys'] ?? 0) }}"
+                       class="w-full rounded-lg border-slate-300 focus:border-sky-500 focus:ring-sky-500">
+                <p class="text-xs text-slate-400 mt-1">Belirtilen saat penceresinde en fazla bu kadar alım yapılır; dolunca crash'te alım durur (satış sürer). 0 = limit yok.</p>
+            </div>
+            <div>
+                <label class="block text-sm font-medium text-slate-700 mb-1">Pencere (saat)</label>
+                <input type="number" name="v2_buy_window_h" step="0.5" min="0.1" max="168" value="{{ old('v2_buy_window_h', $p['v2_buy_window_h'] ?? 4) }}"
+                       class="w-full rounded-lg border-slate-300 focus:border-sky-500 focus:ring-sky-500">
+                <p class="text-xs text-slate-400 mt-1">Örn. maks 3 alım + 4 saat: sert düşüşte en fazla 4 saatte 3 alım; sermaye kademeli yatırılır.</p>
+            </div>
+        </div>
+    </div>
 </div>
 
 {{-- RSI parametreleri --}}

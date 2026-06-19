@@ -353,6 +353,7 @@ class TradeBotController extends Controller
                         (float) $tradeBot->order_size,
                         $fee / 100,
                         $slip / 100,
+                        $interval,
                     );
                     if (isset($result['error'])) {
                         $error = $result['error'];
@@ -398,7 +399,7 @@ class TradeBotController extends Controller
                     $orderSize = (float) $tradeBot->order_size;
 
                     foreach ($this->optimizeCombos($tradeBot->strategy, $base) as $combo) {
-                        $r = Backtest::run($tradeBot->strategy, array_merge($base, $combo), $closes, $budget, $orderSize, $fee / 100, $slip / 100);
+                        $r = Backtest::run($tradeBot->strategy, array_merge($base, $combo), $closes, $budget, $orderSize, $fee / 100, $slip / 100, $interval);
                         if (isset($r['error'])) {
                             continue;
                         }
@@ -555,6 +556,8 @@ class TradeBotController extends Controller
             'sell_profit_pct' => ['nullable', 'numeric', 'min:0', 'max:200'],
             // grid v2 (sabit çapalı dip-alım merdiveni)
             'v2_step_pct' => ['nullable', 'numeric', 'min:0.1', 'max:90'],
+            'v2_max_buys' => ['nullable', 'integer', 'min:0', 'max:1000'],
+            'v2_buy_window_h' => ['nullable', 'numeric', 'min:0.1', 'max:168'],
             // rsi / ma / macd / bollinger ortak
             'interval' => ['nullable', 'string', 'max:8'],
             'period' => ['nullable', 'integer', 'min:2', 'max:200'],
@@ -603,6 +606,9 @@ class TradeBotController extends Controller
                 'v2_step_pct' => (float) ($d['v2_step_pct'] ?? 1),
                 // 0 = bir adım yukarı sat; >0 = alış × (1+%X) hedefiyle sat.
                 'sell_profit_pct' => (float) ($d['sell_profit_pct'] ?? 0),
+                // Hızlı düşüş freni: pencerede (saat) en fazla N alım. 0 = kapalı.
+                'v2_max_buys' => (int) ($d['v2_max_buys'] ?? 0),
+                'v2_buy_window_h' => (float) ($d['v2_buy_window_h'] ?? 4),
             ],
             'rsi' => [
                 'interval' => $d['interval'] ?? '15m',
