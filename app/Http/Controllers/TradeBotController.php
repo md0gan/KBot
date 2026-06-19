@@ -14,7 +14,7 @@ class TradeBotController extends Controller
 {
     public function index(Request $request): View
     {
-        $bots = $request->user()->tradeBots()->with('position')->latest()->get();
+        $bots = $request->user()->tradeBots()->with(['position', 'gridLevels'])->latest()->get();
 
         $invested = (float) $bots->sum(fn ($b) => $b->position?->cost_basis ?? 0);
         $currentValue = (float) $bots->sum(fn ($b) => $b->position

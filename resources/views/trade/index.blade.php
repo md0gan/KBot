@@ -46,6 +46,10 @@
                     $pos = $bot->position;
                     $val = (float) ($pos->last_value ?? ($pos->cost_basis ?? 0));
                     $pnl = $val - (float) ($pos->cost_basis ?? 0);
+                    $lastPrice = (float) ($pos->last_price ?? 0);
+                    $nextBuy = $bot->strategy === 'grid'
+                        ? (float) ($bot->gridLevels->where('status', 'waiting_buy')->max('buy_price') ?? 0)
+                        : 0;
                 @endphp
                 <div class="bg-white rounded-xl p-4 shadow-sm border border-slate-200">
                     <div class="flex items-center justify-between">
@@ -65,6 +69,10 @@
 
                     <div class="mt-3 text-sm text-slate-600 grid grid-cols-2 gap-y-1">
                         <span>Bütçe</span><span class="text-right font-medium">{{ kb_money($bot->budget) }} {{ $bot->quote_asset }}</span>
+                        <span>Anlık fiyat</span><span class="text-right font-medium">{{ $lastPrice > 0 ? kb_price($lastPrice) : '—' }}</span>
+                        @if ($bot->strategy === 'grid')
+                            <span>İlk alım</span><span class="text-right font-medium text-emerald-600">{{ $nextBuy > 0 ? kb_price($nextBuy) : '—' }}</span>
+                        @endif
                         <span>Maliyet</span><span class="text-right font-medium">{{ kb_money($pos->cost_basis ?? 0) }}</span>
                         <span>Değer</span><span class="text-right font-medium">{{ kb_money($val) }}</span>
                         <span>Açık K/Z</span><span class="text-right font-medium {{ $pnl >= 0 ? 'text-emerald-600' : 'text-red-600' }}">{{ $pnl >= 0 ? '+' : '' }}{{ kb_money($pnl) }}</span>
@@ -75,8 +83,10 @@
                     @endif
 
                     <div class="mt-4 flex gap-2">
-                        <form method="POST" action="{{ route('trade.run', $bot) }}" class="flex-1">@csrf
-                            <button class="w-full text-sm px-2 py-1.5 rounded-lg bg-slate-900 text-white hover:bg-slate-700">Çalıştır</button>
+                        <form method="POST" action="{{ route('trade.toggle', $bot) }}" class="flex-1">@csrf
+                            <button class="w-full text-sm px-2 py-1.5 rounded-lg {{ $bot->enabled ? 'border border-amber-300 text-amber-700 hover:bg-amber-50' : 'bg-emerald-600 text-white hover:bg-emerald-500' }}">
+                                {{ $bot->enabled ? 'Durdur' : 'Başlat' }}
+                            </button>
                         </form>
                         <a href="{{ route('trade.show', $bot) }}" class="text-sm px-3 py-1.5 rounded-lg bg-white border border-slate-300 hover:bg-slate-50">Detay</a>
                     </div>
