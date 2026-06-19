@@ -247,7 +247,11 @@
                 <div class="flex flex-wrap items-center justify-between gap-2 mb-3">
                     <h2 class="font-semibold">Fiyat Grafiği <span class="text-xs font-normal text-slate-400">{{ $tradeBot->symbol }}</span></h2>
                     <div class="flex items-center gap-2">
-                        <span class="text-xs text-slate-400">mum <span class="text-emerald-600">▲</span>/<span class="text-red-500">▼</span> + hacim@if ($tradeBot->strategy === 'grid') · kademe <span class="text-emerald-600">alış</span>/<span class="text-red-500">satış</span>@endif</span>
+                        <span class="text-xs text-slate-400">mum <span class="text-emerald-600">▲</span>/<span class="text-red-500">▼</span> + hacim
+                            @if ($tradeBot->strategy === 'grid')
+                                · kademe <span class="text-emerald-600">alış</span>/<span class="text-red-500">satış</span>
+                            @endif
+                        </span>
                         <select id="kb-chart-interval" class="rounded-md border-slate-300 text-xs py-1">
                             @foreach (['1m','5m','15m','30m','1h','4h','1d'] as $iv)
                                 <option value="{{ $iv }}" @selected($iv === '1h')>{{ $iv }}</option>
