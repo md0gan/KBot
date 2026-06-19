@@ -105,6 +105,7 @@
                     class="w-full rounded-lg border-slate-300 focus:border-sky-500 focus:ring-sky-500">
                 <option value="manual" @selected(old('range_mode', $p['range_mode'] ?? 'manual') === 'manual')>Manuel (alt/üst fiyat)</option>
                 <option value="auto" @selected(old('range_mode', $p['range_mode'] ?? 'manual') === 'auto')>Otomatik (kademe adımı %)</option>
+                <option value="atr" @selected(old('range_mode', $p['range_mode'] ?? 'manual') === 'atr')>ATR (volatiliteye göre dinamik)</option>
             </select>
         </div>
         <div>
@@ -128,13 +129,32 @@
                    class="w-full rounded-lg border-slate-300 focus:border-sky-500 focus:ring-sky-500">
             <p class="text-xs text-slate-400 mt-1">Her kademe arası ve alış→satış farkı bu orandır. Örn. %5: her alış bir öncekinin %5 altında, satış alışın %5 üstünde.</p>
         </div>
-        <div class="grid-auto">
+        <div class="grid-auto grid-atr">
             <label class="block text-sm font-medium text-slate-700 mb-1">Başlangıç Noktası</label>
             <select name="anchor" class="w-full rounded-lg border-slate-300 focus:border-sky-500 focus:ring-sky-500">
                 <option value="below" @selected(old('anchor', $p['anchor'] ?? 'below') === 'below')>Güncel fiyatın altına (alım merdiveni)</option>
-                <option value="symmetric" @selected(old('anchor', $p['anchor'] ?? 'below') === 'symmetric')>Simetrik (±%)</option>
+                <option value="symmetric" @selected(old('anchor', $p['anchor'] ?? 'below') === 'symmetric')>Simetrik (±)</option>
             </select>
             <p class="text-xs text-slate-400 mt-1">"Alım merdiveni": tüm kademeler güncel fiyatın altında; bot yalnızca düştükçe alır.</p>
+        </div>
+        <div class="grid-atr">
+            <label class="block text-sm font-medium text-slate-700 mb-1">ATR Zaman Dilimi</label>
+            <select name="atr_interval" class="w-full rounded-lg border-slate-300 focus:border-sky-500 focus:ring-sky-500">
+                @foreach (['15m','30m','1h','4h','1d'] as $iv)
+                    <option value="{{ $iv }}" @selected(old('atr_interval', $p['atr_interval'] ?? '1h') === $iv)>{{ $iv }}</option>
+                @endforeach
+            </select>
+        </div>
+        <div class="grid-atr">
+            <label class="block text-sm font-medium text-slate-700 mb-1">ATR Periyot</label>
+            <input type="number" name="atr_period" min="2" max="100" value="{{ old('atr_period', $p['atr_period'] ?? 14) }}"
+                   class="w-full rounded-lg border-slate-300 focus:border-sky-500 focus:ring-sky-500">
+        </div>
+        <div class="grid-atr md:col-span-2">
+            <label class="block text-sm font-medium text-slate-700 mb-1">ATR Çarpanı</label>
+            <input type="number" name="atr_mult" step="0.1" min="0.1" max="20" value="{{ old('atr_mult', $p['atr_mult'] ?? 1) }}"
+                   class="w-full md:w-1/2 rounded-lg border-slate-300 focus:border-sky-500 focus:ring-sky-500">
+            <p class="text-xs text-slate-400 mt-1">Kademe adımı = ATR × çarpan (fiyat birimi). Yüksek çarpan = geniş kademeler; aralık volatilite arttıkça otomatik genişler.</p>
         </div>
         <div class="md:col-span-2">
             <label class="flex items-center gap-2">
@@ -313,13 +333,10 @@
     }
     function kbUpdateGridRange() {
         var mode = document.getElementById('grid-range-mode').value;
-        document.querySelectorAll('.grid-manual').forEach(function (el) {
-            el.style.display = mode === 'manual' ? '' : 'none';
-            el.querySelectorAll('input').forEach(function (i) { i.disabled = mode !== 'manual'; });
-        });
-        document.querySelectorAll('.grid-auto').forEach(function (el) {
-            el.style.display = mode === 'auto' ? '' : 'none';
-            el.querySelectorAll('input').forEach(function (i) { i.disabled = mode !== 'auto'; });
+        document.querySelectorAll('.grid-manual, .grid-auto, .grid-atr').forEach(function (el) {
+            var show = el.classList.contains('grid-' + mode);
+            el.style.display = show ? '' : 'none';
+            el.querySelectorAll('input, select').forEach(function (i) { i.disabled = !show; });
         });
     }
     document.addEventListener('DOMContentLoaded', kbUpdateStrategy);

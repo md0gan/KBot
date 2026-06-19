@@ -493,6 +493,16 @@ class TradeEngine
             }
             $pct = max(0.0001, (float) ($params['percent'] ?? 10) / 100);
             $pairs = $this->autoGridPairs($price, $pct, $levels, $params['anchor'] ?? 'symmetric');
+        } elseif ($rangeMode === 'atr') {
+            $price = $this->client->getLastPrice($bot->symbol, $bot->symbol_type ?? 1);
+            if ($price <= 0) {
+                return false;
+            }
+            $step = $this->atrStep($bot, $params);
+            if ($step <= 0) {
+                return false;
+            }
+            $pairs = $this->atrGridPairs($price, $step, $levels, $params['anchor'] ?? 'below');
         } else {
             $lower = (float) ($params['lower'] ?? 0);
             $upper = (float) ($params['upper'] ?? 0);
@@ -543,6 +553,47 @@ class TradeEngine
         return $pairs;
     }
 
+    /** ATR (volatilite) tabanli kademe adimini (fiyat birimi) hesaplar. 0 = hesaplanamadi. */
+    protected function atrStep(TradeBot $bot, array $params): float
+    {
+        $interval = $params['atr_interval'] ?? '1h';
+        $period = max(2, (int) ($params['atr_period'] ?? 14));
+        $mult = max(0.1, (float) ($params['atr_mult'] ?? 1.0));
+
+        $ohlc = $this->client->getOhlc($bot->symbol, $interval, $period + 60, $bot->symbol_type ?? 1);
+        $atr = Indicators::atr($ohlc['highs'], $ohlc['lows'], $ohlc['closes'], $period);
+        if (! $atr || $atr <= 0) {
+            return 0.0;
+        }
+
+        return $atr * $mult;
+    }
+
+    /**
+     * ATR adimina gore dogrusal (mutlak) kademeler. sell = buy + step.
+     * anchor=below: tum merdiven fiyatin altinda; symmetric: fiyatin iki yaninda.
+     *
+     * @return array<int, array{0: float, 1: float}>
+     */
+    protected function atrGridPairs(float $price, float $step, int $levels, string $anchor): array
+    {
+        if ($step <= 0) {
+            return [];
+        }
+        $zero = $anchor === 'below' ? $levels : intdiv($levels, 2);
+
+        $pairs = [];
+        for ($i = 0; $i < $levels; $i++) {
+            $buy = $price - $step * ($zero - $i);
+            if ($buy <= 0) {
+                continue;
+            }
+            $pairs[] = [$buy, $buy + $step];
+        }
+
+        return $pairs;
+    }
+
     /** Verilen [buy, sell] ciftlerini grid kademesi olarak yazar (eskiler silinir). */
     protected function persistGridLevels(TradeBot $bot, array $pairs): void
     {
@@ -579,6 +630,11 @@ class TradeEngine
             $this->persistGridLevels($bot, $this->autoGridPairs($price, $pct, $levels, $params['anchor'] ?? 'symmetric'));
 
             return true;
+        }
+
+        // ATR modda: volatiliteyi yeniden olcup guncel fiyata gore kur.
+        if (($params['range_mode'] ?? 'manual') === 'atr') {
+            return $this->buildGrid($bot);
         }
 
         // MANUEL modda: mevcut genisligi koruyarak kaydir.

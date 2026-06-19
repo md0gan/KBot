@@ -283,10 +283,12 @@ trade için** kullanabilirsiniz, işlemler birbirine karışmaz.
 Menüden **Trade → + Trade botu ekle**. Stratejiler:
 
 - **Grid:** Fiyat aralığı kademelere bölünür; fiyat bir kademenin alış seviyesine inince alır,
-  satış seviyesine çıkınca satar. Aralık **manuel** (alt/üst fiyat) veya **otomatik** belirlenir;
-  bütçe kademelere bölünür. Otomatik modda **Kademe Adımı (%)** girersiniz: bu oran **kademe
-  başınadır** — her alış bir öncekinin %X altında, her satış kendi alışının %X üstündedir
-  (örn. %5 → 5 kademe yaklaşık %25'lik bir bandı kapsar). **Başlangıç noktası** seçilir:
+  satış seviyesine çıkınca satar. Aralık **manuel** (alt/üst fiyat), **otomatik** (kademe adımı %)
+  veya **ATR** (volatiliteye göre dinamik) belirlenir; bütçe kademelere bölünür. Otomatik modda
+  **Kademe Adımı (%)** girersiniz: bu oran **kademe başınadır** — her alış bir öncekinin %X altında,
+  her satış kendi alışının %X üstündedir (örn. %5 → 5 kademe yaklaşık %25'lik bir bandı kapsar).
+  **ATR modunda** kademe adımı = ATR × çarpan (fiyat birimi); volatilite arttıkça kademeler otomatik
+  genişler (canlı motor gerçek H/L kullanır, backtest kapanış bazlı yaklaşıkla hesaplar). **Başlangıç noktası** seçilir:
   *alım merdiveni* (tüm kademeler güncel fiyatın altında — bot yalnızca düştükçe alır) ya da
   *simetrik* (fiyatın altı ve üstü). **Trailing** açılırsa, fiyat aralık dışına çıkıp pozisyon
   boşaldığında grid güncel fiyata göre yeniden kurulur (piyasayı takip). Bir kademe yalnızca fiyat

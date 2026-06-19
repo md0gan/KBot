@@ -7,6 +7,37 @@ namespace App\Services\Trade;
  */
 class Indicators
 {
+    /**
+     * Wilder ATR (Average True Range) — volatilite. highs/lows/closes ayni uzunlukta,
+     * eskiden yeniye sirali. Yetersiz veri varsa null.
+     */
+    public static function atr(array $highs, array $lows, array $closes, int $period = 14): ?float
+    {
+        $n = min(count($highs), count($lows), count($closes));
+        if ($n < $period + 1) {
+            return null;
+        }
+
+        $trs = [];
+        for ($i = 1; $i < $n; $i++) {
+            $h = (float) $highs[$i];
+            $l = (float) $lows[$i];
+            $pc = (float) $closes[$i - 1];
+            $trs[] = max($h - $l, abs($h - $pc), abs($l - $pc));
+        }
+        if (count($trs) < $period) {
+            return null;
+        }
+
+        // Ilk ATR = ilk `period` TR ortalamasi; sonra Wilder yumusatma.
+        $atr = array_sum(array_slice($trs, 0, $period)) / $period;
+        for ($i = $period, $m = count($trs); $i < $m; $i++) {
+            $atr = (($atr * ($period - 1)) + $trs[$i]) / $period;
+        }
+
+        return $atr;
+    }
+
     /** Wilder RSI (son deger). Yetersiz veri varsa null. */
     public static function rsi(array $closes, int $period = 14): ?float
     {

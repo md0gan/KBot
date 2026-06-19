@@ -266,13 +266,16 @@ class TradeBotController extends Controller
             'trail_tp_pct' => ['nullable', 'numeric', 'min:0', 'max:100'],
             'notes' => ['nullable', 'string', 'max:1000'],
             // grid
-            'range_mode' => ['nullable', 'in:manual,auto'],
+            'range_mode' => ['nullable', 'in:manual,auto,atr'],
             'lower' => ['nullable', 'numeric', 'min:0'],
             'upper' => ['nullable', 'numeric', 'min:0'],
             'percent' => ['nullable', 'numeric', 'min:0.1', 'max:90'],
             'levels' => ['nullable', 'integer', 'min:2', 'max:100'],
             'trailing' => ['nullable', 'boolean'],
             'anchor' => ['nullable', 'in:symmetric,below'],
+            'atr_interval' => ['nullable', 'string', 'max:8'],
+            'atr_period' => ['nullable', 'integer', 'min:2', 'max:100'],
+            'atr_mult' => ['nullable', 'numeric', 'min:0.1', 'max:20'],
             // rsi / ma / macd / bollinger ortak
             'interval' => ['nullable', 'string', 'max:8'],
             'period' => ['nullable', 'integer', 'min:2', 'max:200'],
@@ -303,6 +306,9 @@ class TradeBotController extends Controller
                 'levels' => (int) ($d['levels'] ?? 5),
                 'trailing' => (bool) ($d['trailing'] ?? false),
                 'anchor' => in_array($d['anchor'] ?? '', ['symmetric', 'below'], true) ? $d['anchor'] : 'symmetric',
+                'atr_interval' => $d['atr_interval'] ?? '1h',
+                'atr_period' => (int) ($d['atr_period'] ?? 14),
+                'atr_mult' => (float) ($d['atr_mult'] ?? 1),
             ],
             'rsi' => [
                 'interval' => $d['interval'] ?? '15m',

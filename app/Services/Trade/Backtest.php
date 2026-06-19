@@ -287,6 +287,45 @@ class Backtest
         return $pairs;
     }
 
+    /** Kapanis bazli ATR yaklasigi (son `period` kapanis-degisimi mutlak ortalamasi). */
+    protected static function atrProxy(array $closes, int $period): float
+    {
+        $n = count($closes);
+        if ($n < $period + 1) {
+            return 0.0;
+        }
+        $sum = 0.0;
+        $cnt = 0;
+        for ($i = $n - $period; $i < $n; $i++) {
+            if ($i < 1) {
+                continue;
+            }
+            $sum += abs($closes[$i] - $closes[$i - 1]);
+            $cnt++;
+        }
+
+        return $cnt > 0 ? $sum / $cnt : 0.0;
+    }
+
+    /** ATR adimina gore dogrusal (mutlak) kademeler (TradeEngine ile ayni mantik). */
+    protected static function atrGridPairs(float $price, float $step, int $levels, string $anchor): array
+    {
+        if ($step <= 0) {
+            return [];
+        }
+        $zero = $anchor === 'below' ? $levels : intdiv($levels, 2);
+        $pairs = [];
+        for ($i = 0; $i < $levels; $i++) {
+            $buy = $price - $step * ($zero - $i);
+            if ($buy <= 0) {
+                continue;
+            }
+            $pairs[] = [$buy, $buy + $step];
+        }
+
+        return $pairs;
+    }
+
     protected static function grid(array $p, array $closes, float $budget, float $fee, float $slip): array
     {
         $levels = max(2, (int) ($p['levels'] ?? 5));
@@ -298,6 +337,15 @@ class Backtest
             $pct = max(0.0001, (float) ($p['percent'] ?? 10) / 100);
             // Kademe-basina %step (alis->satis %pct, ardisik alislar %pct).
             $pairs = self::autoGridPairs($first, $pct, $levels, $anchor);
+        } elseif ($rangeMode === 'atr') {
+            // ATR backtest'te kapanis bazli YAKLASIKLA hesaplanir (canli motor gercek H/L kullanir).
+            $period = max(2, (int) ($p['atr_period'] ?? 14));
+            $mult = max(0.1, (float) ($p['atr_mult'] ?? 1.0));
+            $step = self::atrProxy($closes, $period) * $mult;
+            if ($step <= 0) {
+                return ['error' => 'ATR hesaplanamadı (yetersiz veri).'];
+            }
+            $pairs = self::atrGridPairs($first, $step, $levels, $anchor);
         } else {
             $lower = (float) ($p['lower'] ?? 0);
             $upper = (float) ($p['upper'] ?? 0);
@@ -344,6 +392,8 @@ class Backtest
                 if ($flat && ($price > $hi || $price < $lo)) {
                     if ($rangeMode === 'auto') {
                         $pairs = self::autoGridPairs($price, $pct, $levels, $anchor);
+                    } elseif ($rangeMode === 'atr') {
+                        $pairs = self::atrGridPairs($price, $step, $levels, $anchor);
                     } else {
                         $width = $hi - $lo;
                         $nl = max(0.0, $price - $width / 2);
