@@ -263,6 +263,7 @@ class TradeBotController extends Controller
             'enabled' => ['nullable', 'boolean'],
             'compounding' => ['nullable', 'boolean'],
             'max_loss_pct' => ['nullable', 'numeric', 'min:0', 'max:100'],
+            'trail_tp_pct' => ['nullable', 'numeric', 'min:0', 'max:100'],
             'notes' => ['nullable', 'string', 'max:1000'],
             // grid
             'range_mode' => ['nullable', 'in:manual,auto'],
@@ -336,6 +337,7 @@ class TradeBotController extends Controller
         // Tum stratejilere ortak: kar biriktirme + zarar durdurma
         $params['compounding'] = (bool) ($d['compounding'] ?? false);
         $params['max_loss_pct'] = (float) ($d['max_loss_pct'] ?? 0);
+        $params['trail_tp_pct'] = (float) ($d['trail_tp_pct'] ?? 0);
 
         return $params;
     }

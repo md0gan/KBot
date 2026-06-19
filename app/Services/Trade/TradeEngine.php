@@ -113,6 +113,11 @@ class TradeEngine
             return [$stop];
         }
 
+        // Trailing take-profit: toplam K/Z zirveden %X geri cekilince pozisyonu kapat
+        if ($tp = $this->checkTrailingTakeProfit($bot, $price)) {
+            return [$tp];
+        }
+
         $strategy = StrategyFactory::make($bot->strategy);
         $lines = $strategy->run($bot, $this, $price);
 
@@ -232,6 +237,66 @@ class TradeEngine
         }
 
         return $results ?: null;
+    }
+
+    /**
+     * Trailing take-profit (kar koruma): toplam K/Z (gerceklesen + acik) bir zirve
+     * yaptiktan sonra butcenin %X'i kadar geri cekilirse pozisyonu TAMAMEN kapatir,
+     * kari bankaya yazar ve zirveyi sifirlar. Bot calismaya devam eder (yeniden girer).
+     */
+    protected function checkTrailingTakeProfit(TradeBot $bot, float $price): ?string
+    {
+        $pct = (float) $bot->param('trail_tp_pct', 0);
+        if ($pct <= 0 || $bot->budget <= 0) {
+            return null;
+        }
+
+        $pos = $bot->position()->first();
+        if (! $pos) {
+            return null;
+        }
+
+        $realized = (float) $pos->realized_profit;
+        $unrealized = $pos->quantity * $price - (float) $pos->cost_basis;
+        $totalPl = $realized + $unrealized;
+
+        // Zirveyi guncelle
+        $peak = $pos->tp_peak !== null ? (float) $pos->tp_peak : $totalPl;
+        if ($totalPl > $peak) {
+            $peak = $totalPl;
+            $pos->tp_peak = $peak;
+            $pos->save();
+        }
+
+        $threshold = ($pct / 100) * (float) $bot->budget;
+        $drop = $peak - $totalPl;
+
+        // Yalnizca POZITIF bir zirveden geri cekilmede ve acik pozisyon varken
+        if ($peak > 0 && $pos->quantity > 0 && $drop >= $threshold) {
+            $order = $this->sell($bot, $pos->quantity, 'trailing_tp', $price);
+            if ($order) {
+                if ($bot->strategy === 'grid') {
+                    $bot->gridLevels()->update(['status' => 'waiting_buy', 'quantity' => 0, 'buy_order_quote' => 0]);
+                }
+
+                // Zirveyi yeni toplam K/Z'ye (artik tamami gerceklesen) sifirla
+                $pos->refresh();
+                $pos->tp_peak = (float) $pos->realized_profit;
+                $pos->save();
+
+                if ($this->notifier->notifyTrades) {
+                    $this->notifier->send(
+                        "🟡 [Trade] {$bot->symbol} Trailing take-profit — pozisyon kapatıldı.\n".
+                        'Zirve K/Z: '.kb_money($peak)." {$bot->quote_asset}, geri çekilme: ".kb_money($drop)." (eşik %{$pct}).\n".
+                        'Bu kapanış: '.($order->realized_profit >= 0 ? '+' : '').kb_money($order->realized_profit)." {$bot->quote_asset}."
+                    );
+                }
+
+                return 'Trailing take-profit: pozisyon kapatıldı (zirveden '.kb_money($drop).' geri çekildi).';
+            }
+        }
+
+        return null;
     }
 
     protected function updateValuation(TradeBot $bot, float $price): void

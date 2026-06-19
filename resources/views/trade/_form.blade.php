@@ -79,6 +79,12 @@
                class="w-full rounded-lg border-slate-300 focus:border-sky-500 focus:ring-sky-500">
         <p class="text-xs text-slate-400 mt-1">Toplam K/Z bütçenin bu yüzdesi kadar zarara ulaşınca bot otomatik durur (örn. 50).</p>
     </div>
+    <div>
+        <label class="block text-sm font-medium text-slate-700 mb-1">Trailing Take-Profit (% — 0 = kapalı)</label>
+        <input type="number" name="trail_tp_pct" step="0.1" min="0" max="100" value="{{ old('trail_tp_pct', $p['trail_tp_pct'] ?? 0) }}"
+               class="w-full rounded-lg border-slate-300 focus:border-sky-500 focus:ring-sky-500">
+        <p class="text-xs text-slate-400 mt-1">Toplam K/Z zirveden bütçenin bu yüzdesi kadar geri çekilince pozisyon kapatılır, kâr bankaya yazılır (örn. 5).</p>
+    </div>
     <div class="flex items-center">
         <label class="flex items-center gap-2">
             <input type="hidden" name="compounding" value="0">

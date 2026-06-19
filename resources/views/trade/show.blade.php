@@ -149,6 +149,9 @@
                     @if ($tradeBot->param('max_loss_pct', 0) > 0)
                         <div class="flex justify-between"><dt class="text-slate-500">Zarar durdurma</dt><dd>bütçenin %{{ rtrim(rtrim(number_format($tradeBot->param('max_loss_pct'), 2, '.', ''), '0'), '.') }}'i</dd></div>
                     @endif
+                    @if ($tradeBot->param('trail_tp_pct', 0) > 0)
+                        <div class="flex justify-between"><dt class="text-slate-500">Trailing TP</dt><dd class="text-emerald-600">zirveden %{{ rtrim(rtrim(number_format($tradeBot->param('trail_tp_pct'), 2, '.', ''), '0'), '.') }} geri çekilince kapat</dd></div>
+                    @endif
                     @if ($tradeBot->max_buy_price)
                         <div class="flex justify-between"><dt class="text-slate-500">Maks. alım fiyatı</dt><dd>{{ kb_price($tradeBot->max_buy_price) }}</dd></div>
                     @endif
