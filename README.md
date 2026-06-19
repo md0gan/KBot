@@ -300,6 +300,11 @@ Menüden **Trade → + Trade botu ekle**. Stratejiler:
 - **MA Kesişimi:** Kısa MA uzun MA'yı yukarı keserse alır, aşağı keserse satar (SMA/EMA).
 - **MACD:** MACD çizgisi sinyal çizgisini yukarı keserse alır, aşağı keserse satar.
 - **Bollinger:** Fiyat alt banda inince alır, üst banda çıkınca satar.
+- **Akıllı Scalp:** Çok-onaylı ortalamaya dönüş — **RSI aşırı satım + fiyat Bollinger alt bandında +
+  (üst zaman dilimi trendi yukarı)** iken alır; küçük **sabit kâr hedefine** (örn. %0.6) ulaşınca ya da
+  RSI çıkış eşiğine dönünce satar. Yüksek kazanma oranı **tasarım gereğidir, kâr garantisi değildir**
+  (küçük kârlar sık alınır; nadir büyük zarar riski için **Zarar Durdurma şart**). Önce simülasyon +
+  backtest/optimize ile deneyin. (Backtest'te HTF trend filtresi uygulanmaz; canlıda uygulanır.)
 
 **Ek filtreler (MACD & Bollinger):** Alımları daraltmak için opsiyonel filtreler — **Trend MA**
 (yalnızca fiyat EMA üzerindeyken al), MACD'de **sıfır çizgisi** (yalnızca MACD > 0 iken al),

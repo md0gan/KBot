@@ -231,6 +231,11 @@
                         <div class="flex justify-between"><dt class="text-slate-500">Zaman dilimi</dt><dd>{{ $p['interval'] ?? '15m' }}</dd></div>
                         <div class="flex justify-between"><dt class="text-slate-500">MA</dt><dd>{{ strtoupper($p['ma_type'] ?? 'ema') }} {{ $p['short'] ?? 9 }}/{{ $p['long'] ?? 21 }}</dd></div>
                         <div class="flex justify-between"><dt class="text-slate-500">İşlem tutarı</dt><dd>{{ kb_money($tradeBot->order_size) }}</dd></div>
+                    @elseif ($tradeBot->strategy === 'smart_scalp')
+                        <div class="flex justify-between"><dt class="text-slate-500">Zaman / Kâr hedefi</dt><dd>{{ $p['interval'] ?? '5m' }} / %{{ $p['scalp_tp_pct'] ?? '0.6' }}</dd></div>
+                        <div class="flex justify-between"><dt class="text-slate-500">RSI giriş/çıkış</dt><dd>{{ $p['oversold'] ?? 30 }} / {{ $p['overbought'] ?? 60 }} (p{{ $p['rsi_period'] ?? 14 }})</dd></div>
+                        <div class="flex justify-between"><dt class="text-slate-500">Bollinger</dt><dd>p{{ $p['bb_period'] ?? 20 }} · k{{ $p['bb_k'] ?? 2 }}</dd></div>
+                        <div class="flex justify-between"><dt class="text-slate-500">İşlem tutarı</dt><dd>{{ kb_money($tradeBot->order_size) }}</dd></div>
                     @endif
                     @if (($p['htf_ma'] ?? 0) > 0 && $tradeBot->strategy !== 'grid')
                         <div class="flex justify-between"><dt class="text-slate-500">Üst ZD trend filtresi</dt><dd>{{ $p['htf_interval'] ?? '4h' }} · EMA{{ $p['htf_ma'] }}</dd></div>

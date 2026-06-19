@@ -37,6 +37,7 @@
             <option value="ma_cross" @selected($curStrategy === 'ma_cross')>MA Kesişimi (SMA/EMA)</option>
             <option value="macd" @selected($curStrategy === 'macd')>MACD (sinyal kesişimi)</option>
             <option value="bollinger" @selected($curStrategy === 'bollinger')>Bollinger Bantları</option>
+            <option value="smart_scalp" @selected($curStrategy === 'smart_scalp')>Akıllı Scalp (çok-onaylı)</option>
         </select>
     </div>
     <div>
@@ -339,6 +340,53 @@
                        class="rounded border-slate-300 text-sky-600 focus:ring-sky-500">
                 <span class="text-sm text-slate-700">RSI onayı (alımda RSI ≤ 40)</span>
             </label>
+        </div>
+    </div>
+</div>
+
+{{-- Akilli Scalp parametreleri --}}
+<div class="strategy-params mt-5 rounded-lg border border-slate-200 bg-slate-50 p-4" data-strategy="smart_scalp">
+    <h3 class="text-sm font-semibold text-slate-700 mb-1">Akıllı Scalp Ayarları</h3>
+    <p class="text-xs text-slate-500 mb-3">RSI aşırı satım + fiyat Bollinger alt bandında + (üst zaman dilimi trendi yukarı) iken al; küçük sabit kâr hedefine ulaşınca ya da RSI dönünce sat. <strong>Yukarıdan "Zarar Durdurma"yı açmanız önerilir.</strong></p>
+    <div class="grid md:grid-cols-3 gap-5">
+        <div>
+            <label class="block text-sm font-medium text-slate-700 mb-1">Zaman Dilimi</label>
+            <select name="interval" class="w-full rounded-lg border-slate-300 focus:border-sky-500 focus:ring-sky-500">
+                @foreach (['1m','5m','15m','30m','1h','4h'] as $iv)
+                    <option value="{{ $iv }}" @selected(old('interval', $p['interval'] ?? '5m') === $iv)>{{ $iv }}</option>
+                @endforeach
+            </select>
+        </div>
+        <div>
+            <label class="block text-sm font-medium text-slate-700 mb-1">Kâr Hedefi (%)</label>
+            <input type="number" name="scalp_tp_pct" step="0.1" min="0.1" max="20" value="{{ old('scalp_tp_pct', $p['scalp_tp_pct'] ?? 0.6) }}"
+                   class="w-full rounded-lg border-slate-300 focus:border-sky-500 focus:ring-sky-500">
+            <p class="text-xs text-slate-400 mt-1">Alıştan bu kadar yukarıda sat; küçük tut (örn. 0.6).</p>
+        </div>
+        <div>
+            <label class="block text-sm font-medium text-slate-700 mb-1">RSI Periyot</label>
+            <input type="number" name="rsi_period" min="2" max="200" value="{{ old('rsi_period', $p['rsi_period'] ?? 14) }}"
+                   class="w-full rounded-lg border-slate-300 focus:border-sky-500 focus:ring-sky-500">
+        </div>
+        <div>
+            <label class="block text-sm font-medium text-slate-700 mb-1">RSI Aşırı Satım (giriş)</label>
+            <input type="number" name="oversold" min="1" max="99" value="{{ old('oversold', $p['oversold'] ?? 30) }}"
+                   class="w-full rounded-lg border-slate-300 focus:border-sky-500 focus:ring-sky-500">
+        </div>
+        <div>
+            <label class="block text-sm font-medium text-slate-700 mb-1">RSI Çıkış Eşiği (sat)</label>
+            <input type="number" name="overbought" min="1" max="99" value="{{ old('overbought', $p['overbought'] ?? 60) }}"
+                   class="w-full rounded-lg border-slate-300 focus:border-sky-500 focus:ring-sky-500">
+        </div>
+        <div>
+            <label class="block text-sm font-medium text-slate-700 mb-1">Bollinger Periyot</label>
+            <input type="number" name="bb_period" min="2" max="200" value="{{ old('bb_period', $p['bb_period'] ?? 20) }}"
+                   class="w-full rounded-lg border-slate-300 focus:border-sky-500 focus:ring-sky-500">
+        </div>
+        <div>
+            <label class="block text-sm font-medium text-slate-700 mb-1">Bollinger Std Çarpanı (k)</label>
+            <input type="number" name="bb_k" step="0.1" min="0.5" max="5" value="{{ old('bb_k', $p['bb_k'] ?? 2) }}"
+                   class="w-full rounded-lg border-slate-300 focus:border-sky-500 focus:ring-sky-500">
         </div>
     </div>
 </div>

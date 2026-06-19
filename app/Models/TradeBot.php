@@ -108,6 +108,7 @@ class TradeBot extends Model
             'ma_cross' => 'MA Kesişimi',
             'macd' => 'MACD',
             'bollinger' => 'Bollinger',
+            'smart_scalp' => 'Akıllı Scalp',
             default => $this->strategy,
         };
     }

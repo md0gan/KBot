@@ -33,6 +33,7 @@ class Backtest
             'ma_cross' => self::single(self::maSignals($params, $closes), $closes, $orderSize, $feePct, $slipPct),
             'macd' => self::single(self::macdSignals($params, $closes), $closes, $orderSize, $feePct, $slipPct),
             'bollinger' => self::single(self::bollingerSignals($params, $closes), $closes, $orderSize, $feePct, $slipPct),
+            'smart_scalp' => self::smartScalp($params, $closes, $orderSize, $feePct, $slipPct),
             default => ['error' => 'Bilinmeyen strateji.'],
         };
         if (isset($sim['error'])) {
@@ -120,6 +121,81 @@ class Backtest
                 }
                 $qty = 0;
                 $entryCost = 0;
+            }
+
+            $equity[$i] = $cash + $qty * $price;
+        }
+
+        return [
+            'trades' => $trades,
+            'wins' => $wins,
+            'losses' => $trades - $wins,
+            'realized' => $realized,
+            'open_value' => $qty * $closes[$n - 1],
+            'invested' => $base,
+            'equity' => $equity,
+        ];
+    }
+
+    /**
+     * Akilli Scalp: RSI asiri satim + fiyat Bollinger alt bandinda iken AL;
+     * sabit kucuk kar hedefi (scalp_tp_pct) VEYA RSI asiri alim olunca SAT.
+     * (Backtest'te HTF trend filtresi uygulanmaz — canliya ozeldir.)
+     */
+    protected static function smartScalp(array $p, array $closes, float $orderSize, float $fee, float $slip): array
+    {
+        $rsiPeriod = (int) ($p['rsi_period'] ?? 14);
+        $oversold = (float) ($p['oversold'] ?? 30);
+        $overbought = (float) ($p['overbought'] ?? 60);
+        $bbPeriod = (int) ($p['bb_period'] ?? 20);
+        $bbK = (float) ($p['bb_k'] ?? 2);
+        $tpPct = (float) ($p['scalp_tp_pct'] ?? 0.6);
+
+        $n = count($closes);
+        $base = $orderSize;
+        $cash = $base;
+        $qty = 0.0;
+        $entryCost = 0.0;
+        $entryPrice = 0.0;
+        $realized = 0.0;
+        $trades = 0;
+        $wins = 0;
+        $equity = [];
+        $warm = max($rsiPeriod, $bbPeriod) + 1;
+
+        for ($i = 0; $i < $n; $i++) {
+            $price = $closes[$i];
+
+            if ($i >= $warm) {
+                $slice = array_slice($closes, 0, $i + 1);
+                $rsi = Indicators::rsi($slice, $rsiPeriod);
+                $bands = Indicators::bollinger($slice, $bbPeriod, $bbK);
+
+                if ($rsi !== null && $bands !== null) {
+                    if ($qty <= 0) {
+                        if ($rsi <= $oversold && $price <= $bands['lower'] && $cash >= $base) {
+                            $cash -= $base;
+                            $entryCost = $base;
+                            $qty = ($base * (1 - $fee)) / ($price * (1 + $slip));
+                            $entryPrice = $price;
+                        }
+                    } else {
+                        $tpHit = $entryPrice > 0 && $price >= $entryPrice * (1 + $tpPct / 100);
+                        if ($tpHit || $rsi >= $overbought) {
+                            $net = $qty * $price * (1 - $slip) * (1 - $fee);
+                            $cash += $net;
+                            $pl = $net - $entryCost;
+                            $realized += $pl;
+                            $trades++;
+                            if ($pl > 0) {
+                                $wins++;
+                            }
+                            $qty = 0.0;
+                            $entryCost = 0.0;
+                            $entryPrice = 0.0;
+                        }
+                    }
+                }
             }
 
             $equity[$i] = $cash + $qty * $price;

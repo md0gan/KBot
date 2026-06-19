@@ -482,6 +482,16 @@ class TradeBotController extends Controller
                     }
                 }
                 break;
+
+            case 'smart_scalp':
+                foreach ([25, 30, 35] as $os) {
+                    foreach ([55, 60, 70] as $ob) {
+                        foreach ([0.4, 0.6, 1.0] as $tp) {
+                            $combos[] = ['oversold' => $os, 'overbought' => $ob, 'scalp_tp_pct' => $tp];
+                        }
+                    }
+                }
+                break;
         }
 
         return $combos;
@@ -496,7 +506,7 @@ class TradeBotController extends Controller
             'tag' => ['nullable', 'string', 'max:40'],
             'base_asset' => ['required', 'string', 'max:32', 'regex:/^[A-Za-z0-9]+$/'],
             'quote_asset' => ['required', 'string', 'max:16', 'regex:/^[A-Za-z0-9]+$/'],
-            'strategy' => ['required', 'in:grid,rsi,ma_cross,macd,bollinger'],
+            'strategy' => ['required', 'in:grid,rsi,ma_cross,macd,bollinger,smart_scalp'],
             'mode' => ['required', 'in:inherit,simulation,live'],
             'budget' => ['required', 'numeric', 'min:0.00000001'],
             'order_size' => ['nullable', 'numeric', 'min:0'],
@@ -530,6 +540,11 @@ class TradeBotController extends Controller
             'slow' => ['nullable', 'integer', 'min:2', 'max:400'],
             'signal' => ['nullable', 'integer', 'min:1', 'max:200'],
             'k' => ['nullable', 'numeric', 'min:0.5', 'max:5'],
+            // akilli scalp
+            'rsi_period' => ['nullable', 'integer', 'min:2', 'max:200'],
+            'bb_period' => ['nullable', 'integer', 'min:2', 'max:200'],
+            'bb_k' => ['nullable', 'numeric', 'min:0.5', 'max:5'],
+            'scalp_tp_pct' => ['nullable', 'numeric', 'min:0.1', 'max:20'],
             // ek filtreler (macd/bollinger)
             'trend_ma' => ['nullable', 'integer', 'min:0', 'max:400'],
             'require_above_zero' => ['nullable', 'boolean'],
@@ -582,6 +597,15 @@ class TradeBotController extends Controller
                 'k' => (float) ($d['k'] ?? 2),
                 'trend_ma' => (int) ($d['trend_ma'] ?? 0),
                 'confirm_rsi' => (bool) ($d['confirm_rsi'] ?? false),
+            ],
+            'smart_scalp' => [
+                'interval' => $d['interval'] ?? '5m',
+                'rsi_period' => (int) ($d['rsi_period'] ?? 14),
+                'oversold' => (float) ($d['oversold'] ?? 30),
+                'overbought' => (float) ($d['overbought'] ?? 60),
+                'bb_period' => (int) ($d['bb_period'] ?? 20),
+                'bb_k' => (float) ($d['bb_k'] ?? 2),
+                'scalp_tp_pct' => (float) ($d['scalp_tp_pct'] ?? 0.6),
             ],
             default => [],
         };
