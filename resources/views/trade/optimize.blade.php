@@ -46,7 +46,7 @@
         @if (! empty($results))
             @php
                 $q = $tradeBot->quote_asset;
-                $labels = ['percent' => 'Adım %', 'levels' => 'Kademe', 'sell_profit_pct' => 'Satış kârı %', 'atr_mult' => 'ATR ×', 'period' => 'Periyot', 'oversold' => 'Aşırı satım', 'overbought' => 'Aşırı alım', 'short' => 'Kısa MA', 'long' => 'Uzun MA', 'fast' => 'Hızlı', 'slow' => 'Yavaş', 'signal' => 'Sinyal', 'k' => 'K'];
+                $labels = ['percent' => 'Adım %', 'v2_step_pct' => 'Düşüş adımı %', 'levels' => 'Kademe', 'sell_profit_pct' => 'Satış kârı %', 'atr_mult' => 'ATR ×', 'period' => 'Periyot', 'oversold' => 'Aşırı satım', 'overbought' => 'Aşırı alım', 'short' => 'Kısa MA', 'long' => 'Uzun MA', 'fast' => 'Hızlı', 'slow' => 'Yavaş', 'signal' => 'Sinyal', 'k' => 'K'];
                 $paramKeys = array_keys($results[0]['params']);
             @endphp
             <div class="text-sm text-slate-500 mb-2">{{ $tested }} kombinasyon denendi · en iyi {{ count($results) }} gösteriliyor (Toplam K/Z'ye göre).</div>

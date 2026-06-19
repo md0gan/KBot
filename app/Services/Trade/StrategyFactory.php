@@ -4,6 +4,7 @@ namespace App\Services\Trade;
 
 use App\Services\Trade\Strategies\BollingerStrategy;
 use App\Services\Trade\Strategies\GridStrategy;
+use App\Services\Trade\Strategies\GridV2Strategy;
 use App\Services\Trade\Strategies\MacdStrategy;
 use App\Services\Trade\Strategies\MaCrossStrategy;
 use App\Services\Trade\Strategies\RsiStrategy;
@@ -17,6 +18,7 @@ class StrategyFactory
     {
         return match ($strategy) {
             'grid' => new GridStrategy(),
+            'grid_v2' => new GridV2Strategy(),
             'rsi' => new RsiStrategy(),
             'ma_cross' => new MaCrossStrategy(),
             'macd' => new MacdStrategy(),

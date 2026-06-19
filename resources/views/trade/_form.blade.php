@@ -33,6 +33,7 @@
         <select name="strategy" id="strategy-select" onchange="kbUpdateStrategy()"
                 class="w-full rounded-lg border-slate-300 focus:border-sky-500 focus:ring-sky-500">
             <option value="grid" @selected($curStrategy === 'grid')>Grid</option>
+            <option value="grid_v2" @selected($curStrategy === 'grid_v2')>Grid v2 (Dip Merdiveni — sabit çapa)</option>
             <option value="rsi" @selected($curStrategy === 'rsi')>RSI (aşırı alım/satım)</option>
             <option value="ma_cross" @selected($curStrategy === 'ma_cross')>MA Kesişimi (SMA/EMA)</option>
             <option value="macd" @selected($curStrategy === 'macd')>MACD (sinyal kesişimi)</option>
@@ -61,7 +62,7 @@
         <input type="number" name="order_size" step="0.00000001" min="0"
                value="{{ old('order_size', ($bot && $bot->order_size > 0) ? $bot->order_size : '') }}"
                class="w-full rounded-lg border-slate-300 focus:border-sky-500 focus:ring-sky-500">
-        <p class="text-xs text-slate-400 mt-1">RSI/MA: her sinyalde alınacak tutar (boşsa bütçe). Grid'de bütçe kademelere bölünür.</p>
+        <p class="text-xs text-slate-400 mt-1">RSI/MA: her sinyalde alınacak tutar (boşsa bütçe). Grid'de bütçe kademelere bölünür. <strong>Grid v2'de her dip alımında harcanacak sabit tutar</strong> (bütçe tavandır).</p>
     </div>
 
     <div>
@@ -191,6 +192,31 @@
                        class="rounded border-slate-300 text-sky-600 focus:ring-sky-500">
                 <span class="text-sm text-slate-700">Trailing — fiyat aralık dışına çıkınca (pozisyon boşken) grid'i güncel fiyata yeniden ortala</span>
             </label>
+        </div>
+    </div>
+</div>
+
+{{-- Grid v2 parametreleri (sabit çapalı dip-alım merdiveni) --}}
+<div class="strategy-params mt-5 rounded-lg border border-slate-200 bg-slate-50 p-4" data-strategy="grid_v2">
+    <h3 class="text-sm font-semibold text-slate-700 mb-1">Grid v2 Ayarları — Dip Merdiveni</h3>
+    <p class="text-xs text-slate-500 mb-3">
+        Bot ilk çalıştığında o anki fiyat <strong>çapa</strong> olarak sabitlenir (yukarı kaymaz).
+        Fiyat çapadan her <strong>%adım</strong> düştüğünde (boş bir seviyeye ilk inişte) <strong>İşlem Başına Tutar</strong> kadar alım yapar.
+        Seviyeler sabit fiyata çakılı olduğu için fiyatın bir miktar yükselip tekrar inmesi boş yere alım yaptırmaz; alım yalnızca gerçek yeni dipte olur.
+        Satılınca o seviye tekrar aktifleşir. Bütçe toplam tavandır. Yukarıdaki <strong>Zarar Durdurma / Trailing TP / Compounding</strong> burada da geçerlidir.
+    </p>
+    <div class="grid md:grid-cols-2 gap-5">
+        <div>
+            <label class="block text-sm font-medium text-slate-700 mb-1">Düşüş Adımı (%)</label>
+            <input type="number" name="v2_step_pct" step="0.1" min="0.1" max="90" value="{{ old('v2_step_pct', $p['v2_step_pct'] ?? 1) }}"
+                   class="w-full rounded-lg border-slate-300 focus:border-sky-500 focus:ring-sky-500">
+            <p class="text-xs text-slate-400 mt-1">Çapadan doğrusal: seviyeler −%adım, −2×%adım, −3×%adım… (örn. %1 → çapanın %1, %2, %3 altı).</p>
+        </div>
+        <div>
+            <label class="block text-sm font-medium text-slate-700 mb-1">Sabit Satış Kârı (% — 0 = adım kadar)</label>
+            <input type="number" name="sell_profit_pct" step="0.1" min="0" max="200" value="{{ old('sell_profit_pct', $p['sell_profit_pct'] ?? 0) }}"
+                   class="w-full rounded-lg border-slate-300 focus:border-sky-500 focus:ring-sky-500">
+            <p class="text-xs text-slate-400 mt-1">0 ise her lot bir adım yukarıda (alış × (1+%adım)) satılır. &gt;0 ise alış × (1+%X) hedefiyle satılır.</p>
         </div>
     </div>
 </div>

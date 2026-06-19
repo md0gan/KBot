@@ -26,6 +26,7 @@ class TradeBot extends Model
         'mode',
         'budget',
         'order_size',
+        'v2_anchor_price',
         'max_buy_price',
         'params',
         'min_qty',
@@ -46,6 +47,7 @@ class TradeBot extends Model
             'enabled' => 'boolean',
             'budget' => 'float',
             'order_size' => 'float',
+            'v2_anchor_price' => 'float',
             'max_buy_price' => 'float',
             'params' => 'array',
             'min_qty' => 'float',
@@ -104,6 +106,7 @@ class TradeBot extends Model
     {
         return match ($this->strategy) {
             'grid' => 'Grid',
+            'grid_v2' => 'Grid v2 (Dip Merdiveni)',
             'rsi' => 'RSI',
             'ma_cross' => 'MA Kesişimi',
             'macd' => 'MACD',

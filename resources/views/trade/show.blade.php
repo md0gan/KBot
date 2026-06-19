@@ -38,6 +38,11 @@
                       onsubmit="return confirm('Grid kademeleri yeniden kurulsun mu? Mevcut kademe durumları sıfırlanır.');">@csrf
                     <button class="px-3 py-2 text-sm rounded-lg border border-slate-300 hover:bg-slate-50">Grid'i yeniden kur</button>
                 </form>
+            @elseif ($tradeBot->strategy === 'grid_v2')
+                <form method="POST" action="{{ route('trade.rebuild-grid', $tradeBot) }}"
+                      onsubmit="return confirm('Grid v2 çapası sıfırlansın mı? Seviyeler temizlenir; bir sonraki çalıştırmada çapa güncel fiyata yeniden sabitlenir.');">@csrf
+                    <button class="px-3 py-2 text-sm rounded-lg border border-slate-300 hover:bg-slate-50">Çapayı sıfırla</button>
+                </form>
             @endif
             <a href="{{ route('trade.backtest', $tradeBot) }}" class="px-3 py-2 text-sm rounded-lg border border-slate-300 hover:bg-slate-50">Backtest</a>
             <a href="{{ route('trade.optimize', $tradeBot) }}" class="px-3 py-2 text-sm rounded-lg border border-slate-300 hover:bg-slate-50">Optimize</a>
@@ -223,6 +228,16 @@
                         @if (($p['sell_profit_pct'] ?? 0) > 0)
                             <div class="flex justify-between"><dt class="text-slate-500">Sabit satış kârı</dt><dd class="text-emerald-600">her kademe alış +%{{ rtrim(rtrim(number_format($p['sell_profit_pct'], 2, '.', ''), '0'), '.') }}</dd></div>
                         @endif
+                    @elseif ($tradeBot->strategy === 'grid_v2')
+                        @php($v2step = rtrim(rtrim(number_format($p['v2_step_pct'] ?? 1, 2, '.', ''), '0'), '.'))
+                        <div class="flex justify-between"><dt class="text-slate-500">Çapa</dt><dd>{{ $tradeBot->v2_anchor_price ? kb_price($tradeBot->v2_anchor_price) : 'ilk çalıştırmada sabitlenecek' }}</dd></div>
+                        <div class="flex justify-between"><dt class="text-slate-500">Düşüş adımı</dt><dd>%{{ $v2step }}</dd></div>
+                        @if (($p['sell_profit_pct'] ?? 0) > 0)
+                            <div class="flex justify-between"><dt class="text-slate-500">Satış hedefi</dt><dd class="text-emerald-600">alış +%{{ rtrim(rtrim(number_format($p['sell_profit_pct'], 2, '.', ''), '0'), '.') }}</dd></div>
+                        @else
+                            <div class="flex justify-between"><dt class="text-slate-500">Satış hedefi</dt><dd class="text-emerald-600">bir adım yukarı (+%{{ $v2step }})</dd></div>
+                        @endif
+                        <div class="flex justify-between"><dt class="text-slate-500">Alım başına</dt><dd>{{ $tradeBot->order_size > 0 ? kb_money($tradeBot->order_size) : 'bütçenin tamamı' }}</dd></div>
                     @elseif ($tradeBot->strategy === 'rsi')
                         <div class="flex justify-between"><dt class="text-slate-500">Zaman / Periyot</dt><dd>{{ $p['interval'] ?? '15m' }} / {{ $p['period'] ?? 14 }}</dd></div>
                         <div class="flex justify-between"><dt class="text-slate-500">Eşikler</dt><dd>{{ $p['oversold'] ?? 30 }} / {{ $p['overbought'] ?? 70 }}</dd></div>
@@ -237,7 +252,7 @@
                         <div class="flex justify-between"><dt class="text-slate-500">Bollinger</dt><dd>p{{ $p['bb_period'] ?? 20 }} · k{{ $p['bb_k'] ?? 2 }}</dd></div>
                         <div class="flex justify-between"><dt class="text-slate-500">İşlem tutarı</dt><dd>{{ kb_money($tradeBot->order_size) }}</dd></div>
                     @endif
-                    @if (($p['htf_ma'] ?? 0) > 0 && $tradeBot->strategy !== 'grid')
+                    @if (($p['htf_ma'] ?? 0) > 0 && ! in_array($tradeBot->strategy, ['grid', 'grid_v2'], true))
                         <div class="flex justify-between"><dt class="text-slate-500">Üst ZD trend filtresi</dt><dd>{{ $p['htf_interval'] ?? '4h' }} · EMA{{ $p['htf_ma'] }}</dd></div>
                     @endif
                     <div class="flex justify-between"><dt class="text-slate-500">Son sinyal</dt><dd>{{ $tradeBot->last_signal ?? '—' }}</dd></div>
@@ -256,7 +271,7 @@
                     <h2 class="font-semibold">Fiyat Grafiği <span class="text-xs font-normal text-slate-400">{{ $tradeBot->symbol }}</span></h2>
                     <div class="flex items-center gap-2">
                         <span class="text-xs text-slate-400">mum <span class="text-emerald-600">▲</span>/<span class="text-red-500">▼</span> + hacim
-                            @if ($tradeBot->strategy === 'grid')
+                            @if (in_array($tradeBot->strategy, ['grid', 'grid_v2'], true))
                                 · kademe <span class="text-emerald-600">alış</span>/<span class="text-red-500">satış</span>
                             @endif
                         </span>
@@ -271,9 +286,9 @@
                 <p id="kb-chart-empty" class="hidden text-sm text-slate-400 text-center py-10">Grafik verisi alınamadı.</p>
             </div>
 
-            @if ($tradeBot->strategy === 'grid' && $levels->isNotEmpty())
+            @if (in_array($tradeBot->strategy, ['grid', 'grid_v2'], true) && $levels->isNotEmpty())
                 <div class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
-                    <div class="px-5 py-3 border-b border-slate-100 font-semibold">Grid Kademeleri</div>
+                    <div class="px-5 py-3 border-b border-slate-100 font-semibold">{{ $tradeBot->strategy === 'grid_v2' ? 'Grid v2 Seviyeleri' : 'Grid Kademeleri' }}</div>
                     <div class="overflow-x-auto">
                         <table class="min-w-full text-sm">
                             <thead class="bg-slate-50 text-slate-500 text-xs uppercase">

@@ -318,7 +318,7 @@ class TradeEngine
         if ($peak > 0 && $pos->quantity > 0 && $drop >= $threshold) {
             $order = $this->sell($bot, $pos->quantity, 'trailing_tp', $price);
             if ($order) {
-                if ($bot->strategy === 'grid') {
+                if (in_array($bot->strategy, ['grid', 'grid_v2'], true)) {
                     $bot->gridLevels()->update(['status' => 'waiting_buy', 'quantity' => 0, 'buy_order_quote' => 0]);
                 }
 

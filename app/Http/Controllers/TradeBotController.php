@@ -98,7 +98,7 @@ class TradeBotController extends Controller
     {
         $this->authorizeBot($request, $tradeBot);
         $tradeBot->load('position');
-        $levels = $tradeBot->strategy === 'grid' ? $tradeBot->gridLevels()->get() : collect();
+        $levels = in_array($tradeBot->strategy, ['grid', 'grid_v2'], true) ? $tradeBot->gridLevels()->get() : collect();
         $orders = $tradeBot->orders()->paginate(20);
 
         return view('trade.show', compact('tradeBot', 'levels', 'orders'));
@@ -136,8 +136,14 @@ class TradeBotController extends Controller
         $tradeBot->enabled = $request->boolean('enabled');
         $tradeBot->save();
 
+        $hint = match ($tradeBot->strategy) {
+            'grid' => ' Grid aralığını değiştirdiyseniz "Grid\'i yeniden kur" deyin.',
+            'grid_v2' => ' Düşüş adımını değiştirdiyseniz "Çapayı sıfırla" deyin (mevcut seviyeler eski adımla kalır).',
+            default => '',
+        };
+
         return redirect()->route('trade.show', $tradeBot)
-            ->with('status', 'Trade botu güncellendi.'.($tradeBot->strategy === 'grid' ? ' Grid aralığını değiştirdiyseniz "Grid\'i yeniden kur" deyin.' : ''));
+            ->with('status', 'Trade botu güncellendi.'.$hint);
     }
 
     public function destroy(Request $request, TradeBot $tradeBot): RedirectResponse
@@ -179,8 +185,8 @@ class TradeBotController extends Controller
         }
         try {
             $order = (new TradeEngine($request->user()))->sell($tradeBot, $qty, 'manual_sell');
-            // Grid ise kademeleri sifirla (tutulanlar elle satildi)
-            if ($order && $tradeBot->strategy === 'grid') {
+            // Grid / Grid v2 ise kademeleri sifirla (tutulanlar elle satildi)
+            if ($order && in_array($tradeBot->strategy, ['grid', 'grid_v2'], true)) {
                 $tradeBot->gridLevels()->update(['status' => 'waiting_buy', 'quantity' => 0, 'buy_order_quote' => 0]);
             }
 
@@ -193,6 +199,17 @@ class TradeBotController extends Controller
     public function rebuildGrid(Request $request, TradeBot $tradeBot): RedirectResponse
     {
         $this->authorizeBot($request, $tradeBot);
+
+        // Grid v2: "yeniden kur" = çapayı sıfırla. Seviyeler temizlenir; bir sonraki
+        // çalıştırmada çapa güncel fiyata yeniden sabitlenir (alım merdiveni baştan kurulur).
+        if ($tradeBot->strategy === 'grid_v2') {
+            $tradeBot->gridLevels()->delete();
+            $tradeBot->v2_anchor_price = null;
+            $tradeBot->save();
+
+            return back()->with('status', 'Grid v2 çapası sıfırlandı; bir sonraki çalıştırmada güncel fiyata yeniden sabitlenecek.');
+        }
+
         if ($tradeBot->strategy !== 'grid') {
             return back()->with('error', 'Bu bot grid stratejisi değil.');
         }
@@ -443,6 +460,14 @@ class TradeBotController extends Controller
                 }
                 break;
 
+            case 'grid_v2':
+                foreach ([0.5, 1, 2, 3] as $step) {
+                    foreach ([0, 1, 2, 5] as $sp) {
+                        $combos[] = ['v2_step_pct' => $step, 'sell_profit_pct' => $sp];
+                    }
+                }
+                break;
+
             case 'rsi':
                 foreach ([7, 14, 21] as $p) {
                     foreach ([20, 25, 30] as $os) {
@@ -506,7 +531,7 @@ class TradeBotController extends Controller
             'tag' => ['nullable', 'string', 'max:40'],
             'base_asset' => ['required', 'string', 'max:32', 'regex:/^[A-Za-z0-9]+$/'],
             'quote_asset' => ['required', 'string', 'max:16', 'regex:/^[A-Za-z0-9]+$/'],
-            'strategy' => ['required', 'in:grid,rsi,ma_cross,macd,bollinger,smart_scalp'],
+            'strategy' => ['required', 'in:grid,grid_v2,rsi,ma_cross,macd,bollinger,smart_scalp'],
             'mode' => ['required', 'in:inherit,simulation,live'],
             'budget' => ['required', 'numeric', 'min:0.00000001'],
             'order_size' => ['nullable', 'numeric', 'min:0'],
@@ -528,6 +553,8 @@ class TradeBotController extends Controller
             'atr_period' => ['nullable', 'integer', 'min:2', 'max:100'],
             'atr_mult' => ['nullable', 'numeric', 'min:0.1', 'max:20'],
             'sell_profit_pct' => ['nullable', 'numeric', 'min:0', 'max:200'],
+            // grid v2 (sabit çapalı dip-alım merdiveni)
+            'v2_step_pct' => ['nullable', 'numeric', 'min:0.1', 'max:90'],
             // rsi / ma / macd / bollinger ortak
             'interval' => ['nullable', 'string', 'max:8'],
             'period' => ['nullable', 'integer', 'min:2', 'max:200'],
@@ -569,6 +596,12 @@ class TradeBotController extends Controller
                 'atr_interval' => $d['atr_interval'] ?? '1h',
                 'atr_period' => (int) ($d['atr_period'] ?? 14),
                 'atr_mult' => (float) ($d['atr_mult'] ?? 1),
+                'sell_profit_pct' => (float) ($d['sell_profit_pct'] ?? 0),
+            ],
+            'grid_v2' => [
+                // Düşüş adımı (%): her seviye çapanın bu kadar altına doğrusal yerleşir.
+                'v2_step_pct' => (float) ($d['v2_step_pct'] ?? 1),
+                // 0 = bir adım yukarı sat; >0 = alış × (1+%X) hedefiyle sat.
                 'sell_profit_pct' => (float) ($d['sell_profit_pct'] ?? 0),
             ],
             'rsi' => [
@@ -668,7 +701,7 @@ class TradeBotController extends Controller
         }
 
         $grid = [];
-        if ($tradeBot->strategy === 'grid') {
+        if (in_array($tradeBot->strategy, ['grid', 'grid_v2'], true)) {
             foreach ($tradeBot->gridLevels()->orderBy('level_index')->get() as $lv) {
                 $grid[] = [
                     'index' => $lv->level_index,

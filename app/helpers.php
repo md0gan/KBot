@@ -50,6 +50,12 @@ if (! function_exists('kb_reason_label')) {
         if (preg_match('/^grid_sell_L(\d+)$/', $reason, $m)) {
             return "Grid kademe {$m[1]} satışı (satış seviyesine ulaştı)";
         }
+        if (preg_match('/^gridv2_buy_L(\d+)$/', $reason, $m)) {
+            return "Grid v2 seviye {$m[1]} alımı (çapadan dip seviyesine inildi)";
+        }
+        if (preg_match('/^gridv2_sell_L(\d+)$/', $reason, $m)) {
+            return "Grid v2 seviye {$m[1]} satışı (kâr hedefine ulaştı)";
+        }
 
         return match ($reason) {
             'rsi_buy' => 'RSI aşırı satım → alım',

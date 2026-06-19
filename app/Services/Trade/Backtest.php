@@ -29,6 +29,7 @@ class Backtest
 
         $sim = match ($strategy) {
             'grid' => self::grid($params, $closes, $budget, $feePct, $slipPct),
+            'grid_v2' => self::gridV2($params, $closes, $budget, $orderSize, $feePct, $slipPct),
             'rsi' => self::single(self::rsiSignals($params, $closes), $closes, $orderSize, $feePct, $slipPct),
             'ma_cross' => self::single(self::maSignals($params, $closes), $closes, $orderSize, $feePct, $slipPct),
             'macd' => self::single(self::macdSignals($params, $closes), $closes, $orderSize, $feePct, $slipPct),
@@ -338,6 +339,111 @@ class Backtest
         }
 
         return $sig;
+    }
+
+    /* ---- Grid v2 (sabit çapalı dip-alım merdiveni) ---- */
+
+    /**
+     * Grid v2 backtest: canlı GridV2Strategy ile birebir mantık. Çapa = ilk kapanış;
+     * seviyeler çapanın altına doğrusal (buy = çapa·(1−k·step)); fiyat boş bir seviyeye
+     * aşağı kesişimle dokununca sabit tutar (orderSize) alır; lot satış hedefine
+     * (sell_profit_pct>0 ? alış·(1+%X) : alış·(1+step)) yukarı kesişimle ulaşınca satar.
+     * Toplam bütçe nakit tavanıdır (kalan nakit alımı karşılamazsa o seviye atlanır).
+     */
+    protected static function gridV2(array $p, array $closes, float $budget, float $orderSize, float $fee, float $slip): array
+    {
+        $step = (float) ($p['v2_step_pct'] ?? 1) / 100;
+        if ($step <= 0) {
+            return ['error' => 'Grid v2 adım yüzdesi geçersiz.'];
+        }
+        $sellPct = (float) ($p['sell_profit_pct'] ?? 0);
+        $sellFactor = 1 + ($sellPct > 0 ? $sellPct / 100 : $step);
+
+        $anchor = $closes[0];
+        $kFloor = (int) ceil(1 / $step) - 1;   // buy>0 için k < 1/step
+        if ($kFloor < 1 || $anchor <= 0) {
+            return ['error' => 'Grid v2 adımı çok büyük (geçerli seviye yok).'];
+        }
+
+        $perBuy = $orderSize > 0 ? $orderSize : $budget;
+        $base = $budget;
+        $cash = $base;
+        $realized = 0.0;
+        $trades = 0;
+        $wins = 0;
+        $n = count($closes);
+        $equity = [];
+
+        // Seviyeler lazily oluşur: index => ['buy','sell','holding','qty','cost']
+        $L = [];
+
+        foreach ($closes as $idx => $price) {
+            $prev = $idx > 0 ? $closes[$idx - 1] : null;
+
+            // Fiyatın ulaştığı en derin seviyeye kadar eksikleri oluştur.
+            $reach = min((int) floor((1 - $price / $anchor) / $step), $kFloor);
+            for ($k = 1; $k <= $reach; $k++) {
+                if (! isset($L[$k])) {
+                    $buy = $anchor * (1 - $k * $step);
+                    if ($buy > 0) {
+                        $L[$k] = ['buy' => $buy, 'sell' => $buy * $sellFactor, 'holding' => false, 'qty' => 0.0, 'cost' => 0.0];
+                    }
+                }
+            }
+
+            foreach ($L as $k => $l) {
+                if (! $l['holding']) {
+                    $buyCross = $prev !== null && $prev > $l['buy'] && $price <= $l['buy'];
+                    if ($buyCross && $perBuy > 0 && $cash + 1e-9 >= $perBuy) {
+                        $cash -= $perBuy;
+                        $L[$k]['holding'] = true;
+                        $L[$k]['qty'] = ($perBuy * (1 - $fee)) / ($price * (1 + $slip));
+                        $L[$k]['cost'] = $perBuy;
+                    }
+                } else {
+                    $sellCross = $prev !== null && $prev < $l['sell'] && $price >= $l['sell'];
+                    if ($sellCross) {
+                        $net = $l['qty'] * $price * (1 - $slip) * (1 - $fee);
+                        $cash += $net;
+                        $pl = $net - $l['cost'];
+                        $realized += $pl;
+                        $trades++;
+                        if ($pl > 0) {
+                            $wins++;
+                        }
+                        $L[$k]['holding'] = false;
+                        $L[$k]['qty'] = 0.0;
+                        $L[$k]['cost'] = 0.0;
+                    }
+                }
+            }
+
+            $hold = 0.0;
+            foreach ($L as $l) {
+                if ($l['holding']) {
+                    $hold += $l['qty'] * $price;
+                }
+            }
+            $equity[$idx] = $cash + $hold;
+        }
+
+        $end = $closes[$n - 1];
+        $openValue = 0.0;
+        foreach ($L as $l) {
+            if ($l['holding']) {
+                $openValue += $l['qty'] * $end;
+            }
+        }
+
+        return [
+            'trades' => $trades,
+            'wins' => $wins,
+            'losses' => $trades - $wins,
+            'realized' => $realized,
+            'open_value' => $openValue,
+            'invested' => $base,
+            'equity' => $equity,
+        ];
     }
 
     /* ---- Grid ---- */

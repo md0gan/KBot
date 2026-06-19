@@ -59,9 +59,14 @@
                     $val = (float) ($pos->last_value ?? ($pos->cost_basis ?? 0));
                     $pnl = $val - (float) ($pos->cost_basis ?? 0);
                     $lastPrice = (float) ($pos->last_price ?? 0);
-                    $nextBuy = $bot->strategy === 'grid'
-                        ? (float) ($bot->gridLevels->where('status', 'waiting_buy')->max('buy_price') ?? 0)
-                        : 0;
+                    $nextBuy = 0;
+                    if (in_array($bot->strategy, ['grid', 'grid_v2'], true)) {
+                        $nextBuy = (float) ($bot->gridLevels->where('status', 'waiting_buy')->max('buy_price') ?? 0);
+                        // Grid v2: henüz seviye oluşmadıysa çapadan ilk dip hedefini göster.
+                        if ($nextBuy <= 0 && $bot->strategy === 'grid_v2' && $bot->v2_anchor_price > 0) {
+                            $nextBuy = (float) $bot->v2_anchor_price * (1 - ((float) $bot->param('v2_step_pct', 1)) / 100);
+                        }
+                    }
                 @endphp
                 <div class="bg-white rounded-xl p-4 shadow-sm border border-slate-200">
                     <div class="flex items-center justify-between">
@@ -87,8 +92,8 @@
                     <div class="mt-3 text-sm text-slate-600 grid grid-cols-2 gap-y-1">
                         <span>Bütçe</span><span class="text-right font-medium">{{ kb_money($bot->budget) }} {{ $bot->quote_asset }}</span>
                         <span>Anlık fiyat</span><span class="text-right font-medium">{{ $lastPrice > 0 ? kb_price($lastPrice) : '—' }}</span>
-                        @if ($bot->strategy === 'grid')
-                            <span>İlk alım</span><span class="text-right font-medium text-emerald-600">{{ $nextBuy > 0 ? kb_price($nextBuy) : '—' }}</span>
+                        @if (in_array($bot->strategy, ['grid', 'grid_v2'], true))
+                            <span>{{ $bot->strategy === 'grid_v2' ? 'Sonraki dip' : 'İlk alım' }}</span><span class="text-right font-medium text-emerald-600">{{ $nextBuy > 0 ? kb_price($nextBuy) : '—' }}</span>
                         @endif
                         <span>Maliyet</span><span class="text-right font-medium">{{ kb_money($pos->cost_basis ?? 0) }}</span>
                         <span>Değer</span><span class="text-right font-medium">{{ kb_money($val) }}</span>

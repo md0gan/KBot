@@ -22,6 +22,7 @@ yarn-error.log
 /.nova
 /.vscode
 /.zed
+.DS_Store
 
 # KBot yerel yardimci betigi (istersen bu satiri silip depoya dahil edebilirsin)
 /auto-commit.ps1
