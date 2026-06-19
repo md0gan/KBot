@@ -380,8 +380,23 @@ class Backtest
         foreach ($closes as $idx => $price) {
             $prev = $idx > 0 ? $closes[$idx - 1] : null;
 
+            // FLAT (holding yok) iken fiyat çapanın üstüne çıkarsa çapayı yukarı taşı
+            // (canlı GridV2Strategy ile birebir). Pozisyon varken çapa donuk kalır.
+            $flat = true;
+            foreach ($L as $l) {
+                if ($l['holding']) {
+                    $flat = false;
+                    break;
+                }
+            }
+            if ($flat && $price > $anchor) {
+                $anchor = $price;
+                $L = []; // bayat seviyeleri temizle; yeni çapadan kurulur
+            }
+
             // Fiyatın ulaştığı en derin seviyeye kadar eksikleri oluştur.
-            $reach = min((int) floor((1 - $price / $anchor) / $step), $kFloor);
+            // (+1e-9: tam sınırda kayan nokta yuvarlamasına karşı koruma; canlı ile birebir)
+            $reach = min((int) floor((1 - $price / $anchor) / $step + 1e-9), $kFloor);
             for ($k = 1; $k <= $reach; $k++) {
                 if (! isset($L[$k])) {
                     $buy = $anchor * (1 - $k * $step);

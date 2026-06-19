@@ -200,9 +200,9 @@
 <div class="strategy-params mt-5 rounded-lg border border-slate-200 bg-slate-50 p-4" data-strategy="grid_v2">
     <h3 class="text-sm font-semibold text-slate-700 mb-1">Grid v2 Ayarları — Dip Merdiveni</h3>
     <p class="text-xs text-slate-500 mb-3">
-        Bot ilk çalıştığında o anki fiyat <strong>çapa</strong> olarak sabitlenir (yukarı kaymaz).
+        Bot ilk çalıştığında o anki fiyat <strong>çapa</strong> olur. <strong>Açık işlem yokken</strong> fiyat yükselirse çapa onu yukarı izler (aşağı inmez); böylece fiyat hep yükselse bile bot boşta kalmaz. <strong>Pozisyon açılınca çapa donar.</strong>
         Fiyat çapadan her <strong>%adım</strong> düştüğünde (boş bir seviyeye ilk inişte) <strong>İşlem Başına Tutar</strong> kadar alım yapar.
-        Seviyeler sabit fiyata çakılı olduğu için fiyatın bir miktar yükselip tekrar inmesi boş yere alım yaptırmaz; alım yalnızca gerçek yeni dipte olur.
+        Pozisyon varken seviyeler sabit fiyata çakılı olduğu için küçük (%adım altı) salınımlar boş yere alım yaptırmaz; alım yalnızca gerçek yeni dipte olur.
         Satılınca o seviye tekrar aktifleşir. Bütçe toplam tavandır. Yukarıdaki <strong>Zarar Durdurma / Trailing TP / Compounding</strong> burada da geçerlidir.
     </p>
     <div class="grid md:grid-cols-2 gap-5">

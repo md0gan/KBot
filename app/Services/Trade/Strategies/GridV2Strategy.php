@@ -11,8 +11,8 @@ use App\Services\Trade\TradeEngine;
  *
  * Mevcut "grid" stratejisinden farkı: önceden tanımlı alt/üst aralık ve sabit kademe
  * sayısı YOKTUR. Tek parametre bir düşüş adımıdır (v2_step_pct, "%x"). Botun ilk
- * çalıştığı andaki fiyat ÇAPA olarak sabitlenir (yukarı kaymaz) ve alım seviyeleri
- * bu çapanın altına DOĞRUSAL yerleşir:
+ * çalıştığı andaki fiyat ÇAPA olur ve alım seviyeleri bu çapanın altına DOĞRUSAL
+ * yerleşir:
  *
  *     buy_price(k) = çapa × (1 − k·x)      (k = 1, 2, 3, …)
  *
@@ -21,9 +21,12 @@ use App\Services\Trade\TradeEngine;
  * tekrar alım yapmaz. Lot satılınca seviye yeniden "boş"a döner; fiyat o seviyeye
  * tekrar inerse yeniden alır.
  *
- * Seviyeler sabit MUTLAK fiyata çakılı olduğundan (hareketli bir tepeye göre değil),
- * fiyatın %x yükselip tekrar %x düşmesi hiçbir seviyeye dokunmaz → boş yere ALIM YAPMAZ.
- * Alım yalnızca fiyat gerçekten yeni bir dibe, boş bir seviyeye inince olur.
+ * ÇAPA İZLEME (flat): Açık pozisyon YOKKEN fiyat çapanın üstüne çıkarsa çapa o fiyata
+ * yükseltilir (aşağı inmez). Böylece fiyat sürekli yükselip ilk çapanın altına hiç
+ * inmese bile bot boşta kalmaz; ilk alım güncel zirveden %adım geri çekilmede tetiklenir.
+ * POZİSYON VARKEN çapa DONUKtur: seviyeler sabit mutlak fiyata çakılı kalır, böylece
+ * küçük (%adım altı) salınımlar boş yere alım yaptırmaz; biriktirme/satış sabit
+ * seviyelerde sürer.
  *
  * Satış hedefi (her lot için):
  *   - sell_profit_pct > 0  → alış × (1 + sell_profit_pct/100)
@@ -41,7 +44,7 @@ class GridV2Strategy implements Strategy
             return ['Grid v2: fiyat alınamadı.'];
         }
 
-        // 1) Çapayı sabitle (yalnız ilk koşuda). Yukarı kaymaz.
+        // 1) Çapa: ilk koşuda o anki fiyata sabitlenir.
         $anchor = (float) ($bot->v2_anchor_price ?? 0);
         if ($anchor <= 0) {
             $anchor = $price;
@@ -50,6 +53,23 @@ class GridV2Strategy implements Strategy
 
             // İlk tur: kesişim referansı yok, kurulumda toplu alım olmaz.
             return ['Grid v2: çapa sabitlendi @ '.kb_price($anchor).' (alım seviyeleri bu fiyatın altına kurulur).'];
+        }
+
+        $pos = $bot->position()->first();
+
+        // 2) FLAT (açık pozisyon yok) iken fiyat çapanın üstüne çıkarsa çapayı yukarı taşı.
+        // Aksi halde fiyat sürekli yükselip ilk çapanın altına hiç inmezse bot sonsuza
+        // dek boşta kalırdı. Çapa yukarı izlenir; ilk alım, güncel zirveden %adım geri
+        // çekilince tetiklenir. POZİSYON VARKEN çapa DONUKtur (anti-salınım korunur;
+        // biriktirme/satış sabit seviyelerde sürer).
+        $hasHolding = $bot->gridLevels()->where('status', 'holding')->exists()
+            || (float) ($pos?->quantity ?? 0) > 1e-9;
+        if (! $hasHolding && $price > $anchor) {
+            $anchor = $price;
+            $bot->v2_anchor_price = $anchor;
+            $bot->save();
+            $bot->gridLevels()->delete(); // bayat bekleyen seviyeleri temizle; yeni çapadan kurulur
+            return ['Grid v2: çapa yukarı güncellendi @ '.kb_price($anchor).' (açık işlem yok, fiyat yükseldi).'];
         }
 
         $step = (float) $bot->param('v2_step_pct', 1) / 100;
@@ -68,13 +88,14 @@ class GridV2Strategy implements Strategy
 
         // Fiyatın ulaştığı en derin seviye indeksi: buy_price(k) >= price
         // anchor(1 - k·step) >= price  ⟺  k <= (1 - price/anchor)/step
-        $reach = (int) floor((1 - $price / $anchor) / $step);
+        // (+1e-9: tam sınırda kayan nokta yuvarlamasına karşı seviyenin oluşmasını garanti eder)
+        $reach = (int) floor((1 - $price / $anchor) / $step + 1e-9);
         $reach = min($reach, $kFloor);
 
         $prev = $engine->previousPrice;
         $lines = [];
 
-        // 2) Ulaşılan derinliğe kadar eksik seviye satırlarını oluştur (lazily).
+        // 3) Ulaşılan derinliğe kadar eksik seviye satırlarını oluştur (lazily).
         if ($reach >= 1) {
             $existing = $bot->gridLevels()->pluck('level_index')->all();
             $have = array_flip($existing);
@@ -98,13 +119,12 @@ class GridV2Strategy implements Strategy
             }
         }
 
-        // 3) Bütçe tavanı: kalan = efektif bütçe − şu anki maliyet.
+        // 4) Bütçe tavanı: kalan = efektif bütçe − şu anki maliyet.
         $cap = $engine->effectiveBudget($bot);
-        $pos = $bot->position()->first();
-        $remaining = $cap > 0 ? max(0.0, $cap - (float) ($pos->cost_basis ?? 0)) : INF;
+        $remaining = $cap > 0 ? max(0.0, $cap - (float) ($pos?->cost_basis ?? 0)) : INF;
         $perBuy = $engine->effectiveOrderSize($bot);
 
-        // 4) Tüm seviyeleri tara: alış (aşağı kesişim) / satış (yukarı kesişim).
+        // 5) Tüm seviyeleri tara: alış (aşağı kesişim) / satış (yukarı kesişim).
         $levels = $bot->gridLevels()->get();
         foreach ($levels as $level) {
             if ($level->status === 'waiting_buy') {
