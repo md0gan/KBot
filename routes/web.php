@@ -7,6 +7,7 @@ use App\Http\Controllers\CoinController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\Install\InstallController;
 use App\Http\Controllers\SettingController;
+use App\Http\Controllers\TelegramWebhookController;
 use App\Http\Controllers\TradeBotController;
 use App\Http\Controllers\TradeController;
 use Illuminate\Support\Facades\Route;
@@ -37,6 +38,9 @@ Route::middleware('guest')->group(function () {
 });
 
 Route::post('/logout', [AuthController::class, 'logout'])->middleware('auth')->name('logout');
+
+// Telegram webhook (kimlik dogrulamasiz; gizli anahtar + secret-token ile korunur).
+Route::post('telegram/webhook/{secret}', [TelegramWebhookController::class, 'handle'])->name('telegram.webhook');
 
 /*
 |--------------------------------------------------------------------------

@@ -18,8 +18,9 @@ class SettingController extends Controller
         $setting = $request->user()->settings();
         $tgAppConfigured = $connect->isConfigured();
         $tgAppUsername = $connect->appUsername();
+        $tgWebhookActive = $connect->webhookActive();
 
-        return view('settings.edit', compact('setting', 'tgAppConfigured', 'tgAppUsername'));
+        return view('settings.edit', compact('setting', 'tgAppConfigured', 'tgAppUsername', 'tgWebhookActive'));
     }
 
     public function update(Request $request): RedirectResponse
@@ -185,9 +186,18 @@ class SettingController extends Controller
 
         $res = $connect->configureApp($data['app_bot_token']);
 
-        return $res['ok']
-            ? back()->with('status', 'Uygulama botu ayarlandı: @'.$res['username'])
-            : back()->with('error', 'Bot ayarlanamadı: '.$res['error']);
+        if (! $res['ok']) {
+            return back()->with('error', 'Bot ayarlanamadı: '.$res['error']);
+        }
+
+        $wh = $res['webhook'] ?? ['ok' => false, 'error' => 'bilinmiyor'];
+        if ($wh['ok'] ?? false) {
+            return back()->with('status', 'Uygulama botu ayarlandı: @'.$res['username'].'. Webhook kuruldu — komutlar anında çalışır.');
+        }
+
+        return back()->with('error',
+            'Uygulama botu ayarlandı: @'.$res['username'].', ancak webhook kurulamadı ('.($wh['error'] ?? '').'). '
+            .'Komutlar polling ile ~1 dk gecikmeli çalışır. (Webhook için sunucuda APP_URL=https://alan-adınız olmalı.)');
     }
 
     public function toggleMode(Request $request): RedirectResponse

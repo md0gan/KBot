@@ -38,7 +38,8 @@
 
                 @if ($tgAppConfigured)
                     <div class="flex flex-wrap items-center justify-between gap-2 rounded-lg bg-emerald-50 border border-emerald-100 px-4 py-3 mb-4">
-                        <div class="text-sm text-emerald-800">✓ Ayarlı: <strong>{{ '@'.$tgAppUsername }}</strong></div>
+                        <div class="text-sm text-emerald-800">✓ Ayarlı: <strong>{{ '@'.$tgAppUsername }}</strong>
+                            · {{ ($tgWebhookActive ?? false) ? '⚡ webhook aktif (komutlar anında)' : '⏳ polling (~1 dk)' }}</div>
                         <form method="POST" action="{{ route('settings.telegram-app') }}"
                               onsubmit="return confirm('Ortak bot kaldırılsın mı? Kullanıcıların bağlantıları çalışmayı durdurur.');">@csrf
                             <input type="hidden" name="clear_app" value="1">

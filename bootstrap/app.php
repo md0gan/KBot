@@ -12,6 +12,11 @@ return Application::configure(basePath: dirname(__DIR__))
         health: '/up',
     )
     ->withMiddleware(function (Middleware $middleware): void {
+        // Telegram webhook'u CSRF'den muaf (disaridan POST gelir, gizli anahtarla korunur).
+        $middleware->validateCsrfTokens(except: [
+            'telegram/webhook/*',
+        ]);
+
         // Kurulu degilse /install'a yonlendiren kontrol (web grubuna eklenir).
         $middleware->web(append: [
             \App\Http\Middleware\CheckInstalled::class,

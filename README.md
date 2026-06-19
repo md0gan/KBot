@@ -325,15 +325,14 @@ ile **tek bir ortak bot** oluşturur ve token'ı **Ayarlar → Uygulama Telegram
 Token doğrulanır (`getMe`) ve bot kullanıcı adı otomatik kaydedilir.
 
 **Bağlanma — her kullanıcı (tek tık):** **Ayarlar → Telegram Bildirimleri → "Telegram'ı Bağla"**
-→ açılan **"Telegram'da Aç"** ile bota gidip **Başlat**'a basar. Bot `/start <kod>` mesajını alır,
-`bot:telegram-poll` komutu (her dakika çalışır) kodu kullanıcıyla eşleştirir ve o kullanıcının
-chat ID'sini otomatik kaydeder. Sayfa bağlanmayı canlı olarak algılar (≤1 dk) — token/chat ID
-elle girmeye gerek yoktur.
+→ açılan **"Telegram'da Aç"** ile bota gidip **Başlat**'a basar. Bot `/start <kod>` mesajını alır
+(webhook kuruluysa **anında**, değilse `bot:telegram-poll` ile ~1 dk), kodu kullanıcıyla eşleştirir
+ve chat ID'sini otomatik kaydeder. Sayfa bağlanmayı canlı algılar — token/chat ID elle girmeye gerek yoktur.
 
 **Telegram'dan şalter:** Bağlı kullanıcı Telegram'a **/salter** yazarak tüm otomatik işlemleri
 (yatırım + trade) durdurabilir/başlatabilir (`bot_enabled` aç/kapat); **/durum** mevcut durumu gösterir.
-Komut ortak botun polling'i ile ~1 dk içinde uygulanır (anında durdurmak için panelde **Ayarlar → Bot
-aktif** kutusunu da kullanabilirsiniz).
+Komut, **webhook** kuruluysa anında, değilse polling ile ~1 dk içinde uygulanır (anında durdurmak için
+panelde **Ayarlar → Bot aktif** kutusunu da kullanabilirsiniz).
 
 > **Gelişmiş:** Ortak bot yerine kendi botunu kullanmak isteyen kullanıcılar, Telegram kartındaki
 > **Gelişmiş** bölümünden kendi token + chat ID'lerini girebilir; doluysa bildirimler o botla gider.
@@ -348,7 +347,10 @@ varlığı başına toplar ve serbest bakiyeyle karşılaştırır. Yetersizse T
 ("bakiye" bildirimi açıksa). Tekrarı önlemek için yalnızca durum değişiminde (yetersiz↔yeterli)
 bir kez bildirilir.
 
-> Ortak bot **getUpdates (polling)** ile çalışır; token kaydedilirken varsa webhook otomatik silinir.
+> Ortak bot, token kaydedilirken **webhook** kurar (anlık komut/bağlanma). Webhook kurulamazsa
+> (örn. APP_URL https değilse) sistem otomatik dakikalık **polling**'e düşer. Webhook için sunucuda
+> `APP_URL=https://alan-adınız` olmalı ve `/telegram/webhook/...` ucu Telegram'dan erişilebilir olmalı.
+> Webhook'u kaldırmak için Ayarlar'dan botu **Kaldır** (deleteWebhook yapılır).
 
 ## Kullanım
 
@@ -376,7 +378,8 @@ php artisan bot:evaluate       # Kar-al değerlendirmesi
 php artisan bot:sync-symbols   # Sembol filtrelerini güncelle
 php artisan bot:balance-check  # Canlı bakiye kontrolü + Telegram bildirimi
 php artisan bot:trade          # Trade botlarını (grid/rsi/ma) çalıştır
-php artisan bot:telegram-poll  # Ortak Telegram botuna gelen "bağla" mesajlarını işle
+php artisan bot:telegram-poll  # Ortak Telegram botuna gelen "bağla" mesajlarını işle (webhook yoksa)
+php artisan bot:telegram-webhook # Ortak bot için webhook'u (yeniden) kur (APP_URL https olmalı)
 php artisan bot:dca --user=1   # Sadece belirli kullanıcı için
 php artisan bot:ping           # Botun ayakta olduğunu test et
 ```
