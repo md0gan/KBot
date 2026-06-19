@@ -254,6 +254,14 @@
                         <div class="flex justify-between"><dt class="text-slate-500">RSI giriş/çıkış</dt><dd>{{ $p['oversold'] ?? 30 }} / {{ $p['overbought'] ?? 60 }} (p{{ $p['rsi_period'] ?? 14 }})</dd></div>
                         <div class="flex justify-between"><dt class="text-slate-500">Bollinger</dt><dd>p{{ $p['bb_period'] ?? 20 }} · k{{ $p['bb_k'] ?? 2 }}</dd></div>
                         <div class="flex justify-between"><dt class="text-slate-500">İşlem tutarı</dt><dd>{{ kb_money($tradeBot->order_size) }}</dd></div>
+                    @elseif ($tradeBot->strategy === 'price_action')
+                        <div class="flex justify-between"><dt class="text-slate-500">Zaman dilimi</dt><dd>{{ $p['interval'] ?? '1h' }}</dd></div>
+                        <div class="flex justify-between"><dt class="text-slate-500">Formasyonlar</dt><dd>{{ ($p['pa_engulfing'] ?? true) ? 'Yutan' : '' }}{{ (($p['pa_engulfing'] ?? true) && ($p['pa_pin'] ?? true)) ? ' + ' : '' }}{{ ($p['pa_pin'] ?? true) ? 'Pin bar' : '' }}{{ (! ($p['pa_engulfing'] ?? true) && ! ($p['pa_pin'] ?? true)) ? '—' : '' }}</dd></div>
+                        <div class="flex justify-between"><dt class="text-slate-500">Pin fitil/gövde</dt><dd>×{{ kb_mult($p['wick_ratio'] ?? 2) }}</dd></div>
+                        @if (($p['tp_pct'] ?? 0) > 0)
+                            <div class="flex justify-between"><dt class="text-slate-500">Kâr hedefi</dt><dd class="text-emerald-600">+%{{ kb_mult($p['tp_pct']) }}</dd></div>
+                        @endif
+                        <div class="flex justify-between"><dt class="text-slate-500">İşlem tutarı</dt><dd>{{ kb_money($tradeBot->order_size) }}</dd></div>
                     @endif
                     @if (($p['htf_ma'] ?? 0) > 0 && ! in_array($tradeBot->strategy, ['grid', 'grid_v2'], true))
                         <div class="flex justify-between"><dt class="text-slate-500">Üst ZD trend filtresi</dt><dd>{{ $p['htf_interval'] ?? '4h' }} · EMA{{ $p['htf_ma'] }}</dd></div>

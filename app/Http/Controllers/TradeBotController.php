@@ -339,8 +339,12 @@ class TradeBotController extends Controller
 
         if ($request->filled('run')) {
             try {
-                $closes = (new TradeEngine($request->user()))->client()
-                    ->getCloses($tradeBot->symbol, $interval, $bars, $tradeBot->symbol_type ?? 1);
+                $client = (new TradeEngine($request->user()))->client();
+                // Price action mum gövdesi/fitili gerektirir → tam OHLC çek.
+                $ohlc = $tradeBot->strategy === 'price_action'
+                    ? $client->getOhlc($tradeBot->symbol, $interval, $bars, $tradeBot->symbol_type ?? 1)
+                    : null;
+                $closes = $ohlc['closes'] ?? $client->getCloses($tradeBot->symbol, $interval, $bars, $tradeBot->symbol_type ?? 1);
 
                 if (count($closes) < 30) {
                     $error = 'Yeterli geçmiş veri çekilemedi (sembol / zaman dilimi / borsa erişimi?).';
@@ -354,6 +358,7 @@ class TradeBotController extends Controller
                         $fee / 100,
                         $slip / 100,
                         $interval,
+                        $ohlc,
                     );
                     if (isset($result['error'])) {
                         $error = $result['error'];
@@ -388,8 +393,11 @@ class TradeBotController extends Controller
 
         if ($request->filled('run')) {
             try {
-                $closes = (new TradeEngine($request->user()))->client()
-                    ->getCloses($tradeBot->symbol, $interval, $bars, $tradeBot->symbol_type ?? 1);
+                $client = (new TradeEngine($request->user()))->client();
+                $ohlc = $tradeBot->strategy === 'price_action'
+                    ? $client->getOhlc($tradeBot->symbol, $interval, $bars, $tradeBot->symbol_type ?? 1)
+                    : null;
+                $closes = $ohlc['closes'] ?? $client->getCloses($tradeBot->symbol, $interval, $bars, $tradeBot->symbol_type ?? 1);
 
                 if (count($closes) < 50) {
                     $error = 'Yeterli geçmiş veri çekilemedi (sembol / zaman dilimi / borsa erişimi?).';
@@ -399,7 +407,7 @@ class TradeBotController extends Controller
                     $orderSize = (float) $tradeBot->order_size;
 
                     foreach ($this->optimizeCombos($tradeBot->strategy, $base) as $combo) {
-                        $r = Backtest::run($tradeBot->strategy, array_merge($base, $combo), $closes, $budget, $orderSize, $fee / 100, $slip / 100, $interval);
+                        $r = Backtest::run($tradeBot->strategy, array_merge($base, $combo), $closes, $budget, $orderSize, $fee / 100, $slip / 100, $interval, $ohlc);
                         if (isset($r['error'])) {
                             continue;
                         }
@@ -518,6 +526,14 @@ class TradeBotController extends Controller
                     }
                 }
                 break;
+
+            case 'price_action':
+                foreach ([1.5, 2.0, 2.5, 3.0] as $wr) {
+                    foreach ([0, 1, 2, 3] as $tp) {
+                        $combos[] = ['wick_ratio' => $wr, 'tp_pct' => $tp];
+                    }
+                }
+                break;
         }
 
         return $combos;
@@ -532,7 +548,7 @@ class TradeBotController extends Controller
             'tag' => ['nullable', 'string', 'max:40'],
             'base_asset' => ['required', 'string', 'max:32', 'regex:/^[A-Za-z0-9]+$/'],
             'quote_asset' => ['required', 'string', 'max:16', 'regex:/^[A-Za-z0-9]+$/'],
-            'strategy' => ['required', 'in:grid,grid_v2,rsi,ma_cross,macd,bollinger,smart_scalp'],
+            'strategy' => ['required', 'in:grid,grid_v2,rsi,ma_cross,macd,bollinger,smart_scalp,price_action'],
             'mode' => ['required', 'in:inherit,simulation,live'],
             'budget' => ['required', 'numeric', 'min:0.00000001'],
             'order_size' => ['nullable', 'numeric', 'min:0'],
@@ -582,6 +598,12 @@ class TradeBotController extends Controller
             // ust zaman dilimi (HTF) trend filtresi — indikator stratejileri
             'htf_interval' => ['nullable', 'string', 'max:8'],
             'htf_ma' => ['nullable', 'integer', 'min:0', 'max:400'],
+            // price action (mum formasyonu)
+            'pa_engulfing' => ['nullable', 'boolean'],
+            'pa_pin' => ['nullable', 'boolean'],
+            'wick_ratio' => ['nullable', 'numeric', 'min:0.5', 'max:10'],
+            'min_body_pct' => ['nullable', 'numeric', 'min:0', 'max:10'],
+            'tp_pct' => ['nullable', 'numeric', 'min:0', 'max:50'],
         ]);
     }
 
@@ -645,6 +667,14 @@ class TradeBotController extends Controller
                 'bb_period' => (int) ($d['bb_period'] ?? 20),
                 'bb_k' => (float) ($d['bb_k'] ?? 2),
                 'scalp_tp_pct' => (float) ($d['scalp_tp_pct'] ?? 0.6),
+            ],
+            'price_action' => [
+                'interval' => $d['interval'] ?? '1h',
+                'pa_engulfing' => (bool) ($d['pa_engulfing'] ?? false),
+                'pa_pin' => (bool) ($d['pa_pin'] ?? false),
+                'wick_ratio' => (float) ($d['wick_ratio'] ?? 2.0),
+                'min_body_pct' => (float) ($d['min_body_pct'] ?? 0.1),
+                'tp_pct' => (float) ($d['tp_pct'] ?? 0),
             ],
             default => [],
         };

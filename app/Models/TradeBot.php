@@ -112,6 +112,7 @@ class TradeBot extends Model
             'macd' => 'MACD',
             'bollinger' => 'Bollinger',
             'smart_scalp' => 'Akıllı Scalp',
+            'price_action' => 'Price Action (Mum)',
             default => $this->strategy,
         };
     }

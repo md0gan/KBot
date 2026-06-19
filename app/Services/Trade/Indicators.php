@@ -266,4 +266,60 @@ class Indicators
             'lower' => $mean - $k * $std,
         ];
     }
+
+    /**
+     * Mum formasyonu tespiti (price action). İki mumdan (önceki + güncel) boğa/ayı
+     * sinyali üretir. Her mum [open, high, low, close] dizisi.
+     *
+     * Desteklenen desenler (opts ile aç/kapa):
+     *  - Yutan (engulfing): güncel mumun gövdesi öncekini sarar (boğa/ayı).
+     *  - Çekiç / Kuyruklu yıldız (pin bar): uzun alt/üst fitil, küçük gövde.
+     *
+     * opts: ['engulfing'=>bool, 'pin'=>bool, 'wick_ratio'=>float, 'min_body_pct'=>float]
+     * Dönüş: 'bull' | 'bear' | null.
+     *
+     * @param  array{0:float,1:float,2:float,3:float}  $prev
+     * @param  array{0:float,1:float,2:float,3:float}  $cur
+     */
+    public static function candlePattern(array $prev, array $cur, array $opts = []): ?string
+    {
+        [$po, , , $pc] = $prev;            // önceki open, close (high/low kullanılmıyor)
+        [$o, $h, $l, $c] = $cur;
+
+        $useEngulf = $opts['engulfing'] ?? true;
+        $usePin = $opts['pin'] ?? true;
+        $wickRatio = (float) ($opts['wick_ratio'] ?? 2.0);
+        $minBody = ((float) ($opts['min_body_pct'] ?? 0.1) / 100) * ($c > 0 ? $c : 1);
+
+        $body = abs($c - $o);
+        $range = $h - $l;
+        $upper = $h - max($o, $c);
+        $lower = min($o, $c) - $l;
+
+        // 1) Yutan (gövde bazlı) — anlamlı bir gövde gerektirir.
+        if ($useEngulf && $body >= $minBody) {
+            // Boğa: önceki ayı, güncel boğa ve güncel gövde öncekini sarar.
+            if ($c > $o && $pc < $po && $o <= $pc && $c >= $po) {
+                return 'bull';
+            }
+            // Ayı: önceki boğa, güncel ayı ve güncel gövde öncekini sarar.
+            if ($c < $o && $pc > $po && $o >= $pc && $c <= $po) {
+                return 'bear';
+            }
+        }
+
+        // 2) Pin bar (çekiç / kuyruklu yıldız) — tek mum.
+        if ($usePin && $body > 0 && $range > 0) {
+            // Çekiç: uzun alt fitil, küçük üst fitil → dip reddi (boğa).
+            if ($lower >= $wickRatio * $body && $upper <= $body) {
+                return 'bull';
+            }
+            // Kuyruklu yıldız: uzun üst fitil, küçük alt fitil → tepe reddi (ayı).
+            if ($upper >= $wickRatio * $body && $lower <= $body) {
+                return 'bear';
+            }
+        }
+
+        return null;
+    }
 }

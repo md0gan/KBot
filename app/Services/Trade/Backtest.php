@@ -20,6 +20,7 @@ class Backtest
         float $feePct = 0.0,
         float $slipPct = 0.0,
         ?string $interval = null,
+        ?array $ohlc = null,
     ): array {
         $closes = array_values(array_filter(array_map('floatval', $closes), fn ($c) => $c > 0));
         $n = count($closes);
@@ -36,6 +37,7 @@ class Backtest
             'macd' => self::single(self::macdSignals($params, $closes), $closes, $orderSize, $feePct, $slipPct),
             'bollinger' => self::single(self::bollingerSignals($params, $closes), $closes, $orderSize, $feePct, $slipPct),
             'smart_scalp' => self::smartScalp($params, $closes, $orderSize, $feePct, $slipPct),
+            'price_action' => self::candleBacktest($params, $ohlc ?? [], $orderSize, $feePct, $slipPct),
             default => ['error' => 'Bilinmeyen strateji.'],
         };
         if (isset($sim['error'])) {
@@ -340,6 +342,91 @@ class Backtest
         }
 
         return $sig;
+    }
+
+    /* ---- Price action (mum formasyonu) ---- */
+
+    /**
+     * Price action backtest: her barda önceki+güncel mumdan Indicators::candlePattern
+     * sinyali üretir. Boğa formasyonunda (flat) AL; ayı formasyonu veya sabit kâr hedefi
+     * (tp_pct) ile (holding) SAT. Tek pozisyon. OHLC: opens/highs/lows/closes gerekir.
+     */
+    protected static function candleBacktest(array $p, array $ohlc, float $orderSize, float $fee, float $slip): array
+    {
+        $opens = $ohlc['opens'] ?? [];
+        $highs = $ohlc['highs'] ?? [];
+        $lows = $ohlc['lows'] ?? [];
+        $closes = $ohlc['closes'] ?? [];
+        $n = min(count($opens), count($highs), count($lows), count($closes));
+        if ($n < 3) {
+            return ['error' => 'Price action: yetersiz/eksik OHLC verisi.'];
+        }
+
+        $opts = [
+            'engulfing' => $p['pa_engulfing'] ?? true,
+            'pin' => $p['pa_pin'] ?? true,
+            'wick_ratio' => (float) ($p['wick_ratio'] ?? 2.0),
+            'min_body_pct' => (float) ($p['min_body_pct'] ?? 0.1),
+        ];
+        $tp = max(0.0, (float) ($p['tp_pct'] ?? 0)) / 100;
+
+        $base = $orderSize;
+        $cash = $base;
+        $qty = 0.0;
+        $entryCost = 0.0;
+        $entryPrice = 0.0;
+        $realized = 0.0;
+        $trades = 0;
+        $wins = 0;
+        $equity = [];
+
+        for ($i = 0; $i < $n; $i++) {
+            $price = $closes[$i];
+
+            if ($i >= 1) {
+                $sig = Indicators::candlePattern(
+                    [$opens[$i - 1], $highs[$i - 1], $lows[$i - 1], $closes[$i - 1]],
+                    [$opens[$i], $highs[$i], $lows[$i], $closes[$i]],
+                    $opts
+                );
+
+                if ($qty <= 0) {
+                    if ($sig === 'bull' && $cash >= $base) {
+                        $cash -= $base;
+                        $entryCost = $base;
+                        $qty = ($base * (1 - $fee)) / ($price * (1 + $slip));
+                        $entryPrice = $price;
+                    }
+                } else {
+                    $exit = $sig === 'bear' || ($tp > 0 && $entryPrice > 0 && $price >= $entryPrice * (1 + $tp));
+                    if ($exit) {
+                        $net = $qty * $price * (1 - $slip) * (1 - $fee);
+                        $cash += $net;
+                        $pl = $net - $entryCost;
+                        $realized += $pl;
+                        $trades++;
+                        if ($pl > 0) {
+                            $wins++;
+                        }
+                        $qty = 0.0;
+                        $entryCost = 0.0;
+                        $entryPrice = 0.0;
+                    }
+                }
+            }
+
+            $equity[$i] = $cash + $qty * $price;
+        }
+
+        return [
+            'trades' => $trades,
+            'wins' => $wins,
+            'losses' => $trades - $wins,
+            'realized' => $realized,
+            'open_value' => $qty * $closes[$n - 1],
+            'invested' => $base,
+            'equity' => $equity,
+        ];
     }
 
     /* ---- Grid v2 (sabit çapalı dip-alım merdiveni) ---- */

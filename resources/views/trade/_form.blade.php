@@ -39,6 +39,7 @@
             <option value="macd" @selected($curStrategy === 'macd')>MACD (sinyal kesişimi)</option>
             <option value="bollinger" @selected($curStrategy === 'bollinger')>Bollinger Bantları</option>
             <option value="smart_scalp" @selected($curStrategy === 'smart_scalp')>Akıllı Scalp (çok-onaylı)</option>
+            <option value="price_action" @selected($curStrategy === 'price_action')>Price Action (mum formasyonları)</option>
         </select>
     </div>
     <div>
@@ -431,6 +432,58 @@
             <label class="block text-sm font-medium text-slate-700 mb-1">Bollinger Std Çarpanı (k)</label>
             <input type="number" name="bb_k" step="0.1" min="0.5" max="5" value="{{ old('bb_k', $p['bb_k'] ?? 2) }}"
                    class="w-full rounded-lg border-slate-300 focus:border-sky-500 focus:ring-sky-500">
+        </div>
+    </div>
+</div>
+
+{{-- Price action parametreleri (mum formasyonu) --}}
+<div class="strategy-params mt-5 rounded-lg border border-slate-200 bg-slate-50 p-4" data-strategy="price_action">
+    <h3 class="text-sm font-semibold text-slate-700 mb-1">Price Action Ayarları — Mum Formasyonları</h3>
+    <p class="text-xs text-slate-500 mb-3">
+        Son <strong>kapalı</strong> mumu değerlendirir. <strong>Boğa</strong> formasyonunda (yutan boğa / çekiç) pozisyon yoksa AL; <strong>ayı</strong> formasyonunda (yutan ayı / kuyruklu yıldız) ya da sabit kâr hedefinde SAT. Yukarıdaki Zarar Durdurma / Trailing TP / HTF trend filtresi de geçerlidir.
+    </p>
+    <div class="grid md:grid-cols-3 gap-5">
+        <div>
+            <label class="block text-sm font-medium text-slate-700 mb-1">Zaman Dilimi</label>
+            <select name="interval" class="w-full rounded-lg border-slate-300 focus:border-sky-500 focus:ring-sky-500">
+                @foreach (['5m','15m','30m','1h','4h','1d'] as $iv)
+                    <option value="{{ $iv }}" @selected(old('interval', $p['interval'] ?? '1h') === $iv)>{{ $iv }}</option>
+                @endforeach
+            </select>
+        </div>
+        <div>
+            <label class="block text-sm font-medium text-slate-700 mb-1">Pin Bar Fitil/Gövde Oranı</label>
+            <input type="number" name="wick_ratio" step="0.1" min="0.5" max="10" value="{{ old('wick_ratio', $p['wick_ratio'] ?? 2.0) }}"
+                   class="w-full rounded-lg border-slate-300 focus:border-sky-500 focus:ring-sky-500">
+            <p class="text-xs text-slate-400 mt-1">Çekiç/kuyruklu yıldız için fitil ≥ bu oran × gövde (örn. 2).</p>
+        </div>
+        <div>
+            <label class="block text-sm font-medium text-slate-700 mb-1">Min. Gövde (% fiyat)</label>
+            <input type="number" name="min_body_pct" step="0.05" min="0" max="10" value="{{ old('min_body_pct', $p['min_body_pct'] ?? 0.1) }}"
+                   class="w-full rounded-lg border-slate-300 focus:border-sky-500 focus:ring-sky-500">
+            <p class="text-xs text-slate-400 mt-1">Yutan formasyonda gürültü filtresi; küçük gövdeleri eler.</p>
+        </div>
+        <div>
+            <label class="block text-sm font-medium text-slate-700 mb-1">Kâr Hedefi (% — 0 = kapalı)</label>
+            <input type="number" name="tp_pct" step="0.1" min="0" max="50" value="{{ old('tp_pct', $p['tp_pct'] ?? 0) }}"
+                   class="w-full rounded-lg border-slate-300 focus:border-sky-500 focus:ring-sky-500">
+            <p class="text-xs text-slate-400 mt-1">&gt;0 ise ortalama maliyetin %X üstünde de satar (ayı formasyonunu beklemeden).</p>
+        </div>
+        <div class="flex items-end">
+            <label class="flex items-center gap-2">
+                <input type="hidden" name="pa_engulfing" value="0">
+                <input type="checkbox" name="pa_engulfing" value="1" @checked(old('pa_engulfing', $p['pa_engulfing'] ?? true))
+                       class="rounded border-slate-300 text-sky-600 focus:ring-sky-500">
+                <span class="text-sm text-slate-700">Yutan formasyonu (engulfing)</span>
+            </label>
+        </div>
+        <div class="flex items-end">
+            <label class="flex items-center gap-2">
+                <input type="hidden" name="pa_pin" value="0">
+                <input type="checkbox" name="pa_pin" value="1" @checked(old('pa_pin', $p['pa_pin'] ?? true))
+                       class="rounded border-slate-300 text-sky-600 focus:ring-sky-500">
+                <span class="text-sm text-slate-700">Çekiç / Kuyruklu yıldız (pin bar)</span>
+            </label>
         </div>
     </div>
 </div>

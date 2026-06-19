@@ -7,6 +7,7 @@ use App\Services\Trade\Strategies\GridStrategy;
 use App\Services\Trade\Strategies\GridV2Strategy;
 use App\Services\Trade\Strategies\MacdStrategy;
 use App\Services\Trade\Strategies\MaCrossStrategy;
+use App\Services\Trade\Strategies\PriceActionStrategy;
 use App\Services\Trade\Strategies\RsiStrategy;
 use App\Services\Trade\Strategies\SmartScalpStrategy;
 use App\Services\Trade\Strategies\Strategy;
@@ -24,6 +25,7 @@ class StrategyFactory
             'macd' => new MacdStrategy(),
             'bollinger' => new BollingerStrategy(),
             'smart_scalp' => new SmartScalpStrategy(),
+            'price_action' => new PriceActionStrategy(),
             default => throw new InvalidArgumentException("Bilinmeyen strateji: {$strategy}"),
         };
     }

@@ -176,29 +176,33 @@ class BinanceTrClient
     }
 
     /**
-     * High/Low/Close dizileri (ATR vb. icin). Eskiden yeniye sirali.
+     * Open/High/Low/Close dizileri (ATR, mum formasyonu vb. icin). Eskiden yeniye sirali.
+     * ('opens' sonradan eklendi; eski cagiranlar high/low/close kullanmaya devam edebilir.)
      *
-     * @return array{highs: array<int,float>, lows: array<int,float>, closes: array<int,float>}
+     * @return array{opens: array<int,float>, highs: array<int,float>, lows: array<int,float>, closes: array<int,float>}
      */
     public function getOhlc(string $symbol, string $interval = '1h', int $limit = 100, int $type = 1): array
     {
+        $opens = [];
         $highs = [];
         $lows = [];
         $closes = [];
         foreach ($this->getKlines($symbol, $interval, $limit, $type) as $k) {
-            if (is_array($k) && isset($k[2], $k[3], $k[4])) {
-                // standart Binance: index 2=high, 3=low, 4=close
+            if (is_array($k) && isset($k[1], $k[2], $k[3], $k[4])) {
+                // standart Binance: index 1=open, 2=high, 3=low, 4=close
+                $opens[] = (float) $k[1];
                 $highs[] = (float) $k[2];
                 $lows[] = (float) $k[3];
                 $closes[] = (float) $k[4];
-            } elseif (is_array($k) && isset($k['high'], $k['low'], $k['close'])) {
+            } elseif (is_array($k) && isset($k['open'], $k['high'], $k['low'], $k['close'])) {
+                $opens[] = (float) $k['open'];
                 $highs[] = (float) $k['high'];
                 $lows[] = (float) $k['low'];
                 $closes[] = (float) $k['close'];
             }
         }
 
-        return ['highs' => $highs, 'lows' => $lows, 'closes' => $closes];
+        return ['opens' => $opens, 'highs' => $highs, 'lows' => $lows, 'closes' => $closes];
     }
 
     /**
