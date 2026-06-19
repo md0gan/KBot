@@ -19,7 +19,7 @@
             @else
                 <span class="text-xs px-2 py-0.5 rounded-full bg-slate-100 text-slate-500">durdu</span>
             @endif
-            @php($emode = $tradeBot->effectiveMode())
+            @php $emode = $tradeBot->effectiveMode(); @endphp
             <span class="text-xs px-2 py-0.5 rounded-full {{ $emode === 'live' ? 'bg-red-100 text-red-700' : 'bg-emerald-100 text-emerald-700' }}">{{ $emode === 'live' ? 'CANLI' : 'SİM' }}</span>
             <span class="text-xs px-2 py-0.5 rounded-full bg-slate-100 text-slate-500">{{ config('bot.modes')[$tradeBot->mode] ?? $tradeBot->mode }}</span>
         </div>
