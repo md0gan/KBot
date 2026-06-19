@@ -33,7 +33,7 @@
                 <div class="flex items-center gap-3 text-sm">
                     @if ($setting)
                         <span class="hidden sm:inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-semibold
-                            {{ $setting->trading_mode === 'live' ? 'bg-red-500/20 text-red-300 ring-1 ring-red-500/40' : 'bg-emerald-500/20 text-emerald-300 ring-1 ring-emerald-500/40' }}">
+                            {{ $setting->trading_mode === 'live' ? 'bg-emerald-500/25 text-emerald-200 ring-1 ring-emerald-400/50' : 'bg-emerald-500/20 text-emerald-300 ring-1 ring-emerald-500/40' }}">
                             {{ $setting->trading_mode === 'live' ? '● CANLI' : '○ SİMÜLASYON' }}
                         </span>
                     @endif
@@ -64,7 +64,7 @@
     </nav>
 
     @if ($setting && $setting->trading_mode === 'live')
-        <div class="bg-red-600 text-white text-center text-sm py-1.5 px-4">
+        <div class="bg-emerald-600 text-white text-center text-sm py-1.5 px-4">
             ⚠ CANLI MOD AKTİF — emirler gerçek paranızla Binance TR'de uygulanır.
         </div>
     @endif

@@ -337,6 +337,12 @@ Bildirim türleri ayrı ayrı açılıp kapatılır: **işlemler** (alım/kar-al
 **bakiye azalması / düşük bakiye**. Düşük bakiye eşiği belirleyebilirsiniz; canlı kote (TRY)
 bakiyesi saatlik `bot:balance-check` ile kontrol edilir ve azalma/eşik altı durumunda bildirilir.
 
+**Trade bütçesi yetersizliği:** `bot:balance-check`, **canlı** trade botlarının bütçelerini
+karşılamak için gereken kote (TRY) tutarını (her botun kalan bütçesi = bütçe − harcanan) kote
+varlığı başına toplar ve serbest bakiyeyle karşılaştırır. Yetersizse Telegram'dan uyarır
+("bakiye" bildirimi açıksa). Tekrarı önlemek için yalnızca durum değişiminde (yetersiz↔yeterli)
+bir kez bildirilir.
+
 > Ortak bot **getUpdates (polling)** ile çalışır; token kaydedilirken varsa webhook otomatik silinir.
 
 ## Kullanım

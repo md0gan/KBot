@@ -2,6 +2,7 @@
 
 namespace App\Services\Trade;
 
+use App\Models\AppSetting;
 use App\Models\Setting;
 use App\Models\TradeBot;
 use App\Models\TradeGridLevel;
@@ -155,6 +156,82 @@ class TradeEngine
         }
 
         return null;
+    }
+
+    /**
+     * Canli trade botlarinin bütçelerini karsilamak icin gereken kote (TRY) bakiyesi,
+     * mevcut serbest bakiyeden fazlaysa Telegram'dan uyarir. Kote varligi basina gruplar;
+     * "gereken" = her botun henuz dagitilmamis (kalan) bütçesi (budget - mevcut maliyet),
+     * yani kurulumda toplam bütçeye, dagittikca azalan tutara esittir.
+     *
+     * Tekrar spam'i onlemek icin yalnizca durum degisiminde (yeterli<->yetersiz) bir kez bildirir.
+     *
+     * @return array<int, array{quote: string, required: float, free: float, short: bool}>|null
+     */
+    public function checkBudgetCoverage(): ?array
+    {
+        if (! $this->client->hasCredentials()) {
+            return null; // canli anahtar yok; bakiye okunamaz
+        }
+
+        // Yalnizca ETKIN ve etkin modu CANLI olan botlar gercek bakiye gerektirir.
+        $bots = $this->user->tradeBots()->enabled()->with('position')->get()
+            ->filter(fn ($b) => $b->effectiveMode($this->globalMode()) === 'live');
+
+        if ($bots->isEmpty()) {
+            return null;
+        }
+
+        // Kote varligi basina kalan (henuz harcanmamis) bütçeyi topla.
+        $required = [];
+        foreach ($bots as $bot) {
+            $quote = $bot->quote_asset ?: 'TRY';
+            $spent = (float) ($bot->position?->cost_basis ?? 0);
+            $remaining = max(0.0, (float) $bot->budget - $spent);
+            $required[$quote] = ($required[$quote] ?? 0) + $remaining;
+        }
+
+        $results = [];
+        foreach ($required as $quote => $need) {
+            if ($need <= 0) {
+                continue;
+            }
+
+            try {
+                $bal = $this->client->getAssetBalance($quote);
+            } catch (\Throwable $e) {
+                continue;
+            }
+
+            $free = (float) ($bal['free'] ?? 0);
+            $short = $free < ($need - 0.00000001);
+            $results[] = ['quote' => $quote, 'required' => $need, 'free' => $free, 'short' => $short];
+
+            if (! $this->notifier->notifyBalance) {
+                continue; // bakiye bildirimleri kapali
+            }
+
+            // Durum degisiminde bir kez bildir (AppSetting'te bayrak tutulur).
+            $flagKey = "trade_budget_short_{$this->user->id}_{$quote}";
+            $wasShort = AppSetting::get($flagKey) === '1';
+
+            if ($short && ! $wasShort) {
+                AppSetting::put($flagKey, '1');
+                $deficit = $need - $free;
+                $this->notifier->send(
+                    "⚠️ Trade bütçesi için yetersiz {$quote} bakiyesi.\n".
+                    'Gerekli (kalan bütçe): '.kb_money($need)." {$quote}\n".
+                    'Mevcut serbest: '.kb_money($free)." {$quote}\n".
+                    'Eksik: '.kb_money($deficit)." {$quote}\n".
+                    "Botlar bütçelerini tam dolduramayabilir; {$quote} ekleyin veya bütçeleri düşürün."
+                );
+            } elseif (! $short && $wasShort) {
+                AppSetting::forget($flagKey);
+                $this->notifier->send("✅ {$quote} bakiyesi trade bütçeleri için yeniden yeterli (".kb_money($free)." {$quote}).");
+            }
+        }
+
+        return $results ?: null;
     }
 
     protected function updateValuation(TradeBot $bot, float $price): void
