@@ -163,25 +163,25 @@ class TelegramConnectService
                 continue;
             }
 
-            // "/start <kod>" formatini yakala.
-            if (! preg_match('#^/start\s+(\S+)#', $text, $m)) {
-                continue;
-            }
+            // "/start <kod>" -> hesaba baglama; diger mesajlar -> komut.
+            if (preg_match('#^/start\s+(\S+)#', $text, $m)) {
+                $code = $m[1];
+                $setting = Setting::query()->where('telegram_connect_token', $code)->first();
 
-            $code = $m[1];
-            $setting = Setting::query()->where('telegram_connect_token', $code)->first();
+                if ($setting) {
+                    $setting->telegram_chat_id = (string) $chatId;
+                    $setting->telegram_connected_at = now();
+                    $setting->telegram_connect_token = null;
+                    $setting->telegram_enabled = true;
+                    $setting->save();
+                    $linked++;
 
-            if ($setting) {
-                $setting->telegram_chat_id = (string) $chatId;
-                $setting->telegram_connected_at = now();
-                $setting->telegram_connect_token = null;
-                $setting->telegram_enabled = true;
-                $setting->save();
-                $linked++;
-
-                $this->sendVia($token, $chatId, "✅ KBot hesabınıza bağlandınız. Bildirimler bu sohbete gelecek.");
+                    $this->sendVia($token, $chatId, "✅ KBot hesabınıza bağlandınız. Bildirimler bu sohbete gelecek.\nKomutlar: /salter (otomatik işlemleri aç/kapat), /durum.");
+                } else {
+                    $this->sendVia($token, $chatId, "⚠️ Bu bağlantı kodu geçersiz veya süresi dolmuş. Panelden tekrar \"Telegram'ı Bağla\" deyin.");
+                }
             } else {
-                $this->sendVia($token, $chatId, "⚠️ Bu bağlantı kodu geçersiz veya süresi dolmuş. Panelden tekrar \"Telegram'ı Bağla\" deyin.");
+                $this->handleCommand($token, $chatId, $text);
             }
         }
 
@@ -191,6 +191,51 @@ class TelegramConnectService
         }
 
         return $linked;
+    }
+
+    /**
+     * Bagli bir sohbetten gelen komutu isler. "Salter" (/salter) tum otomatik
+     * islemleri (yatirim + trade) ac/kapat yapar: Setting::bot_enabled toggle.
+     * Bu bayrak hem TradingBot hem TradeEngine zamanlanmis kosullarini gecer.
+     */
+    protected function handleCommand(string $appToken, $chatId, string $text): void
+    {
+        $cmd = strtolower((string) strtok(ltrim($text), " \t\n"));
+        if ($cmd === '' || $cmd[0] !== '/') {
+            return; // komut degil; sessizce yoksay (spam onleme)
+        }
+        // "/salter@BotAdi" gibi son ekleri ayikla
+        $cmd = explode('@', $cmd)[0];
+
+        $setting = Setting::query()->where('telegram_chat_id', (string) $chatId)->first();
+        if (! $setting) {
+            $this->sendVia($appToken, $chatId, "Bu sohbet bir hesaba bağlı değil. Panelden \"Telegram'ı Bağla\" deyin.");
+
+            return;
+        }
+
+        switch ($cmd) {
+            case '/salter':
+            case '/pause':
+            case '/duraklat':
+                $setting->bot_enabled = ! $setting->bot_enabled;
+                $setting->save();
+                $this->sendVia($appToken, $chatId, $setting->bot_enabled
+                    ? "▶️ Otomatik işlemler AÇIK. Duraklatmak için /salter."
+                    : "⏸️ Tüm otomatik işlemler DURAKLATILDI. Açmak için /salter.");
+                break;
+
+            case '/durum':
+            case '/status':
+                $this->sendVia($appToken, $chatId, $setting->bot_enabled
+                    ? "Durum: ▶️ AÇIK — otomatik işlemler çalışıyor. /salter ile durdurabilirsiniz."
+                    : "Durum: ⏸️ DURAKLATILDI — otomatik işlemler duruyor. /salter ile açabilirsiniz.");
+                break;
+
+            default:
+                $this->sendVia($appToken, $chatId,
+                    "Komutlar:\n/salter — tüm otomatik işlemleri aç/kapat (şalter)\n/durum — mevcut durumu göster");
+        }
     }
 
     protected function sendVia(string $token, $chatId, string $text): void

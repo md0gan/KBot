@@ -330,6 +330,11 @@ Token doğrulanır (`getMe`) ve bot kullanıcı adı otomatik kaydedilir.
 chat ID'sini otomatik kaydeder. Sayfa bağlanmayı canlı olarak algılar (≤1 dk) — token/chat ID
 elle girmeye gerek yoktur.
 
+**Telegram'dan şalter:** Bağlı kullanıcı Telegram'a **/salter** yazarak tüm otomatik işlemleri
+(yatırım + trade) durdurabilir/başlatabilir (`bot_enabled` aç/kapat); **/durum** mevcut durumu gösterir.
+Komut ortak botun polling'i ile ~1 dk içinde uygulanır (anında durdurmak için panelde **Ayarlar → Bot
+aktif** kutusunu da kullanabilirsiniz).
+
 > **Gelişmiş:** Ortak bot yerine kendi botunu kullanmak isteyen kullanıcılar, Telegram kartındaki
 > **Gelişmiş** bölümünden kendi token + chat ID'lerini girebilir; doluysa bildirimler o botla gider.
 

@@ -155,6 +155,7 @@
                                 <button type="submit" form="tg-disconnect-form" class="text-sm px-3 py-1.5 rounded-lg border border-red-300 text-red-600 hover:bg-red-50">Bağlantıyı kaldır</button>
                             </div>
                         </div>
+                        <p class="text-xs text-emerald-700 mt-2">İpucu: Telegram'dan <code>/salter</code> yazarak tüm otomatik işlemleri durdurabilir/başlatabilirsiniz (şalter); <code>/durum</code> ile durumu görürsünüz.</p>
                     @elseif (session('tg_connect_url'))
                         <div class="text-sm text-slate-700 mb-3">Telegram'ı açıp <strong>Başlat</strong>'a basın. Bağlantı birkaç saniye içinde otomatik tamamlanır.</div>
                         <div class="flex flex-wrap items-center gap-3">
