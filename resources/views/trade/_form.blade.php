@@ -4,10 +4,16 @@
 @php($curStrategy = old('strategy', $bot->strategy ?? 'grid'))
 
 <div class="grid md:grid-cols-2 gap-5">
-    <div class="md:col-span-2">
+    <div>
         <label class="block text-sm font-medium text-slate-700 mb-1">İsim (opsiyonel)</label>
         <input type="text" name="name" value="{{ old('name', $bot->name ?? '') }}"
                class="w-full rounded-lg border-slate-300 focus:border-sky-500 focus:ring-sky-500" placeholder="örn. BTC Grid">
+    </div>
+    <div>
+        <label class="block text-sm font-medium text-slate-700 mb-1">Etiket (opsiyonel)</label>
+        <input type="text" name="tag" maxlength="40" value="{{ old('tag', $bot->tag ?? '') }}"
+               class="w-full rounded-lg border-slate-300 focus:border-sky-500 focus:ring-sky-500" placeholder="örn. uzun vadeli, test">
+        <p class="text-xs text-slate-400 mt-1">Kısa kategori; listede rozet olur ve filtrelenebilir.</p>
     </div>
 
     <div>

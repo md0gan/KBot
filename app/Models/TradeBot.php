@@ -16,6 +16,7 @@ class TradeBot extends Model
     protected $fillable = [
         'user_id',
         'name',
+        'tag',
         'base_asset',
         'quote_asset',
         'symbol',

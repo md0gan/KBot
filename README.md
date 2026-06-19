@@ -322,6 +322,8 @@ en iyiler tabloda listelenir. **Sonuç otomatik uygulanmaz** — beğendiğiniz 
 ek kütüphane yok); zaman dilimi seçilebilir. Grid botlarında **alış (yeşil)** ve **satış (kırmızı)**
 kademeleri grafiğe yatay çizgi olarak biner, böylece fiyatın kademelere göre konumunu görürsünüz.
 **İşlem geçmişi** sayfasından tüm trade emirlerini **CSV (Excel uyumlu)** indirebilirsiniz.
+Botlara kısa bir **etiket** (örn. "uzun vadeli", "test") verip listede **etikete göre filtreleyebilirsiniz**;
+ayrıca isim ve serbest **not** alanları vardır.
 
 Her botta **bütçe**, **işlem tutarı**, **maksimum alım fiyatı** ve **mod** (sim/canlı) ayarlanır.
 Ek seçenekler: **Compounding** (açıksa gerçekleşen kâr bütçeye eklenir, alım tutarları büyür;

@@ -15,7 +15,16 @@ class TradeBotController extends Controller
 {
     public function index(Request $request): View
     {
-        $bots = $request->user()->tradeBots()->with(['position', 'gridLevels'])->latest()->get();
+        $tagFilter = trim((string) $request->query('tag', ''));
+        $botsQuery = $request->user()->tradeBots()->with(['position', 'gridLevels']);
+        if ($tagFilter !== '') {
+            $botsQuery->where('tag', $tagFilter);
+        }
+        $bots = $botsQuery->latest()->get();
+
+        $tags = $request->user()->tradeBots()
+            ->whereNotNull('tag')->where('tag', '!=', '')
+            ->distinct()->orderBy('tag')->pluck('tag');
 
         $invested = (float) $bots->sum(fn ($b) => $b->position?->cost_basis ?? 0);
         $currentValue = (float) $bots->sum(fn ($b) => $b->position
@@ -31,7 +40,7 @@ class TradeBotController extends Controller
 
         $recentOrders = $request->user()->tradeOrders()->with('tradeBot')->latest()->limit(12)->get();
 
-        return view('trade.index', compact('bots', 'invested', 'currentValue', 'unrealized', 'realized', 'quote', 'globalMode', 'recentOrders'));
+        return view('trade.index', compact('bots', 'invested', 'currentValue', 'unrealized', 'realized', 'quote', 'globalMode', 'recentOrders', 'tags', 'tagFilter'));
     }
 
     public function create(): View
@@ -49,6 +58,7 @@ class TradeBotController extends Controller
 
         $bot = new TradeBot([
             'name' => $data['name'] ?? null,
+            'tag' => $data['tag'] ?? null,
             'strategy' => $data['strategy'],
             'mode' => $data['mode'],
             'budget' => $data['budget'],
@@ -111,6 +121,7 @@ class TradeBotController extends Controller
 
         $tradeBot->fill([
             'name' => $data['name'] ?? null,
+            'tag' => $data['tag'] ?? null,
             'strategy' => $data['strategy'],
             'mode' => $data['mode'],
             'budget' => $data['budget'],
@@ -428,6 +439,7 @@ class TradeBotController extends Controller
     {
         return $request->validate([
             'name' => ['nullable', 'string', 'max:60'],
+            'tag' => ['nullable', 'string', 'max:40'],
             'base_asset' => ['required', 'string', 'max:32', 'regex:/^[A-Za-z0-9]+$/'],
             'quote_asset' => ['required', 'string', 'max:16', 'regex:/^[A-Za-z0-9]+$/'],
             'strategy' => ['required', 'in:grid,rsi,ma_cross,macd,bollinger'],

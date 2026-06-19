@@ -34,6 +34,17 @@
     </div>
 
     <h2 class="text-lg font-semibold mb-3">Trade Botları</h2>
+
+    @if ($tags->isNotEmpty())
+        <div class="flex flex-wrap items-center gap-2 mb-3 text-sm">
+            <span class="text-slate-500">Etiket:</span>
+            <a href="{{ route('trade.index') }}" class="px-2.5 py-1 rounded-full {{ $tagFilter === '' ? 'bg-slate-900 text-white' : 'bg-white border border-slate-300 text-slate-600 hover:bg-slate-50' }}">Tümü</a>
+            @foreach ($tags as $tg)
+                <a href="{{ route('trade.index', ['tag' => $tg]) }}" class="px-2.5 py-1 rounded-full {{ $tagFilter === $tg ? 'bg-slate-900 text-white' : 'bg-white border border-slate-300 text-slate-600 hover:bg-slate-50' }}">{{ $tg }}</a>
+            @endforeach
+        </div>
+    @endif
+
     @if ($bots->isEmpty())
         <div class="bg-white rounded-xl p-8 text-center text-slate-500 border border-dashed border-slate-300">
             Henüz trade botu yok.
@@ -65,7 +76,12 @@
                             @endif
                         </div>
                     </div>
-                    @if ($bot->name)<div class="text-xs text-slate-400 mt-0.5">{{ $bot->name }}</div>@endif
+                    @if ($bot->name || $bot->tag)
+                        <div class="mt-0.5 flex items-center gap-2 text-xs">
+                            @if ($bot->name)<span class="text-slate-400">{{ $bot->name }}</span>@endif
+                            @if ($bot->tag)<a href="{{ route('trade.index', ['tag' => $bot->tag]) }}" class="px-1.5 py-0.5 rounded bg-sky-50 text-sky-700 border border-sky-100 hover:bg-sky-100">{{ $bot->tag }}</a>@endif
+                        </div>
+                    @endif
 
                     <div class="mt-3 text-sm text-slate-600 grid grid-cols-2 gap-y-1">
                         <span>Bütçe</span><span class="text-right font-medium">{{ kb_money($bot->budget) }} {{ $bot->quote_asset }}</span>

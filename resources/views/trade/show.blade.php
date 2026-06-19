@@ -14,6 +14,9 @@
         <div class="flex items-center gap-3">
             <h1 class="text-2xl font-bold">{{ $tradeBot->symbol }}</h1>
             <span class="text-xs px-2 py-0.5 rounded-full bg-slate-100 text-slate-600">{{ $tradeBot->strategyLabel() }}</span>
+            @if ($tradeBot->tag)
+                <a href="{{ route('trade.index', ['tag' => $tradeBot->tag]) }}" class="text-xs px-2 py-0.5 rounded-full bg-sky-50 text-sky-700 border border-sky-100 hover:bg-sky-100">{{ $tradeBot->tag }}</a>
+            @endif
             @if ($tradeBot->enabled)
                 <span class="text-xs px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-700">aktif</span>
             @else
