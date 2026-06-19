@@ -549,13 +549,27 @@ class TradeBotController extends Controller
 
             foreach ($klines as $k) {
                 if (is_array($k) && isset($k[0], $k[4])) {
-                    // Standart Binance dizisi: [openTime, o, h, l, close, ...]
-                    $points[] = ['t' => (int) $k[0], 'c' => (float) $k[4]];
+                    // Standart Binance dizisi: [openTime, open, high, low, close, volume, ...]
+                    $points[] = [
+                        't' => (int) $k[0],
+                        'o' => (float) ($k[1] ?? $k[4]),
+                        'h' => (float) ($k[2] ?? $k[4]),
+                        'l' => (float) ($k[3] ?? $k[4]),
+                        'c' => (float) $k[4],
+                        'v' => (float) ($k[5] ?? 0),
+                    ];
                 } elseif (is_array($k)) {
                     $t = $k['openTime'] ?? $k['time'] ?? $k['t'] ?? null;
                     $c = $k['close'] ?? $k['c'] ?? null;
                     if ($t !== null && $c !== null) {
-                        $points[] = ['t' => (int) $t, 'c' => (float) $c];
+                        $points[] = [
+                            't' => (int) $t,
+                            'o' => (float) ($k['open'] ?? $c),
+                            'h' => (float) ($k['high'] ?? $c),
+                            'l' => (float) ($k['low'] ?? $c),
+                            'c' => (float) $c,
+                            'v' => (float) ($k['volume'] ?? $k['vol'] ?? 0),
+                        ];
                     }
                 }
             }

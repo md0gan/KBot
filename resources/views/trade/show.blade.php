@@ -42,7 +42,6 @@
         </div>
     </div>
 
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
     <script>
         document.addEventListener('DOMContentLoaded', function () {
             var canvas = document.getElementById('kb-price-chart');
@@ -50,69 +49,117 @@
             var sel = document.getElementById('kb-chart-interval');
             var empty = document.getElementById('kb-chart-empty');
             var base = "{{ route('trade.candles', $tradeBot) }}";
-            var chart = null;
             var KEY = 'kb_chart_iv_{{ $tradeBot->id }}';
+            var data = null;
             try { var sv = localStorage.getItem(KEY); if (sv) sel.value = sv; } catch (e) {}
 
-            function fmt(ts) {
-                return new Date(ts).toLocaleString('tr-TR', { month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit' });
+            function fmtP(v) {
+                if (v >= 1000) return v.toLocaleString('tr-TR', { maximumFractionDigits: 0 });
+                if (v >= 1) return v.toLocaleString('tr-TR', { maximumFractionDigits: 2 });
+                return v.toLocaleString('tr-TR', { maximumFractionDigits: 6 });
             }
             function showEmpty(on) {
-                canvas.style.display = on ? 'none' : '';
+                canvas.style.display = on ? 'none' : 'block';
                 if (empty) empty.classList.toggle('hidden', !on);
             }
+
+            function draw() {
+                if (!data || !data.points || !data.points.length) return;
+                var pts = data.points, grid = data.grid || [];
+                var dpr = window.devicePixelRatio || 1;
+                var cssW = canvas.clientWidth || 600, cssH = canvas.clientHeight || 300;
+                canvas.width = Math.round(cssW * dpr);
+                canvas.height = Math.round(cssH * dpr);
+                var ctx = canvas.getContext('2d');
+                ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+                ctx.clearRect(0, 0, cssW, cssH);
+                ctx.font = '10px sans-serif';
+
+                var padR = 58, padL = 4, padT = 8, padB = 6, gap = 8;
+                var innerH = cssH - padT - padB;
+                var volH = Math.round(innerH * 0.18);
+                var priceH = innerH - volH - gap;
+                var priceTop = padT, priceBot = padT + priceH;
+                var volBot = priceBot + gap + volH;
+                var plotW = cssW - padL - padR;
+
+                var lo = Infinity, hi = -Infinity;
+                pts.forEach(function (p) { if (p.l < lo) lo = p.l; if (p.h > hi) hi = p.h; });
+                grid.forEach(function (g) {
+                    [g.buy, g.sell].forEach(function (v) { if (v > 0) { if (v < lo) lo = v; if (v > hi) hi = v; } });
+                });
+                if (!isFinite(lo)) lo = 0;
+                if (!isFinite(hi) || hi <= lo) hi = lo + 1;
+                var pd = (hi - lo) * 0.04 || 1; lo -= pd; hi += pd;
+                function py(price) { return priceTop + (hi - price) / (hi - lo) * priceH; }
+
+                var vmax = 0; pts.forEach(function (p) { if (p.v > vmax) vmax = p.v; });
+                if (vmax <= 0) vmax = 1;
+
+                var n = pts.length, slot = plotW / n;
+                var bodyW = Math.max(1, Math.min(slot * 0.7, 14));
+                function px(i) { return padL + slot * (i + 0.5); }
+
+                // yatay fiyat ızgarası + sağ etiketler
+                ctx.textBaseline = 'middle'; ctx.textAlign = 'left';
+                for (var t = 0; t <= 4; t++) {
+                    var gp = lo + (hi - lo) * t / 4, gy = py(gp);
+                    ctx.strokeStyle = 'rgba(148,163,184,0.18)'; ctx.lineWidth = 1; ctx.setLineDash([]);
+                    ctx.beginPath(); ctx.moveTo(padL, gy); ctx.lineTo(padL + plotW, gy); ctx.stroke();
+                    ctx.fillStyle = '#94a3b8'; ctx.fillText(fmtP(gp), padL + plotW + 4, gy);
+                }
+
+                // grid kademe çizgileri (alış yeşil / satış kırmızı)
+                grid.forEach(function (g) {
+                    if (g.buy > 0) {
+                        var y = py(g.buy);
+                        ctx.strokeStyle = g.status === 'holding' ? 'rgba(16,185,129,0.9)' : 'rgba(16,185,129,0.55)';
+                        ctx.setLineDash(g.status === 'holding' ? [] : [5, 3]); ctx.lineWidth = 1;
+                        ctx.beginPath(); ctx.moveTo(padL, y); ctx.lineTo(padL + plotW, y); ctx.stroke();
+                    }
+                    if (g.sell > 0) {
+                        var ys = py(g.sell);
+                        ctx.strokeStyle = 'rgba(239,68,68,0.5)'; ctx.setLineDash([4, 4]); ctx.lineWidth = 1;
+                        ctx.beginPath(); ctx.moveTo(padL, ys); ctx.lineTo(padL + plotW, ys); ctx.stroke();
+                    }
+                });
+                ctx.setLineDash([]);
+
+                // hacim çubukları
+                pts.forEach(function (p, i) {
+                    var up = p.c >= p.o, h = (p.v / vmax) * volH;
+                    ctx.fillStyle = up ? 'rgba(16,185,129,0.35)' : 'rgba(239,68,68,0.35)';
+                    ctx.fillRect(px(i) - bodyW / 2, volBot - h, bodyW, h);
+                });
+
+                // mumlar (yeşil ↑ / kırmızı ↓)
+                pts.forEach(function (p, i) {
+                    var x = px(i), up = p.c >= p.o, col = up ? '#10b981' : '#ef4444';
+                    ctx.strokeStyle = col; ctx.fillStyle = col; ctx.lineWidth = 1;
+                    ctx.beginPath(); ctx.moveTo(x, py(p.h)); ctx.lineTo(x, py(p.l)); ctx.stroke();
+                    var yo = py(p.o), yc = py(p.c), top = Math.min(yo, yc), bh = Math.max(1, Math.abs(yc - yo));
+                    ctx.fillRect(x - bodyW / 2, top, bodyW, bh);
+                });
+
+                // son fiyat çizgisi + etiket
+                var last = pts[n - 1].c, ly = py(last);
+                ctx.strokeStyle = 'rgba(2,132,199,0.6)'; ctx.setLineDash([2, 2]); ctx.lineWidth = 1;
+                ctx.beginPath(); ctx.moveTo(padL, ly); ctx.lineTo(padL + plotW, ly); ctx.stroke(); ctx.setLineDash([]);
+                ctx.fillStyle = '#0284c7'; ctx.fillRect(padL + plotW, ly - 8, padR - 4, 16);
+                ctx.fillStyle = '#fff'; ctx.fillText(fmtP(last), padL + plotW + 4, ly);
+            }
+
             function load() {
-                if (!window.Chart) return;
                 fetch(base + '?interval=' + encodeURIComponent(sel.value), { credentials: 'same-origin', headers: { 'Accept': 'application/json' } })
                     .then(function (r) { return r.json(); })
                     .then(function (d) {
-                        var pts = (d && d.points) || [];
-                        if (!pts.length) { showEmpty(true); return; }
-                        showEmpty(false);
-                        var labels = pts.map(function (p) { return fmt(p.t); });
-                        var prices = pts.map(function (p) { return p.c; });
-
-                        var datasets = [{
-                            label: 'Fiyat', data: prices, borderColor: '#0ea5e9',
-                            backgroundColor: 'rgba(14,165,233,0.10)', fill: true, tension: 0.15,
-                            pointRadius: 0, borderWidth: 2, order: 0
-                        }];
-                        (d.grid || []).forEach(function (g) {
-                            var holding = g.status === 'holding';
-                            // Alış kademesi: yeşil ve belirgin (tutulan = düz/kalın, bekleyen = kesikli)
-                            datasets.push({
-                                label: '', data: labels.map(function () { return g.buy; }),
-                                borderColor: holding ? 'rgba(16,185,129,1)' : 'rgba(16,185,129,0.8)',
-                                borderDash: holding ? [] : [6, 3], borderWidth: holding ? 2.5 : 1.75,
-                                pointRadius: 0, fill: false, tension: 0, order: 4
-                            });
-                            // Satış kademesi: kırmızı (ince kesikli)
-                            datasets.push({
-                                label: '', data: labels.map(function () { return g.sell; }),
-                                borderColor: 'rgba(239,68,68,0.65)',
-                                borderDash: [4, 4], borderWidth: 1,
-                                pointRadius: 0, fill: false, tension: 0, order: 5
-                            });
-                        });
-
-                        if (chart) chart.destroy();
-                        chart = new Chart(canvas, {
-                            type: 'line',
-                            data: { labels: labels, datasets: datasets },
-                            options: {
-                                responsive: true, maintainAspectRatio: false, animation: false,
-                                interaction: { intersect: false, mode: 'index' },
-                                plugins: {
-                                    legend: { display: true, labels: { filter: function (i) { return i.text; } } },
-                                    tooltip: { callbacks: { label: function (c) { return c.dataset.label ? (c.dataset.label + ': ' + c.parsed.y) : null; } } }
-                                },
-                                scales: { x: { ticks: { maxTicksLimit: 8, maxRotation: 0 } }, y: { position: 'right' } }
-                            }
-                        });
+                        if (!d || !d.points || !d.points.length) { showEmpty(true); return; }
+                        showEmpty(false); data = d; draw();
                     })
                     .catch(function () { showEmpty(true); });
             }
             sel.addEventListener('change', function () { try { localStorage.setItem(KEY, sel.value); } catch (e) {} load(); });
+            window.addEventListener('resize', function () { if (data) draw(); });
             load();
         });
     </script>
@@ -200,9 +247,7 @@
                 <div class="flex flex-wrap items-center justify-between gap-2 mb-3">
                     <h2 class="font-semibold">Fiyat Grafiği <span class="text-xs font-normal text-slate-400">{{ $tradeBot->symbol }}</span></h2>
                     <div class="flex items-center gap-2">
-                        @if ($tradeBot->strategy === 'grid')
-                            <span class="text-xs text-slate-400">— <span class="text-emerald-600 font-medium">━ alış</span> · <span class="text-red-500">┄ satış</span></span>
-                        @endif
+                        <span class="text-xs text-slate-400">mum <span class="text-emerald-600">▲</span>/<span class="text-red-500">▼</span> + hacim@if ($tradeBot->strategy === 'grid') · kademe <span class="text-emerald-600">alış</span>/<span class="text-red-500">satış</span>@endif</span>
                         <select id="kb-chart-interval" class="rounded-md border-slate-300 text-xs py-1">
                             @foreach (['1m','5m','15m','30m','1h','4h','1d'] as $iv)
                                 <option value="{{ $iv }}" @selected($iv === '1h')>{{ $iv }}</option>
@@ -210,7 +255,7 @@
                         </select>
                     </div>
                 </div>
-                <div style="height: 300px;"><canvas id="kb-price-chart"></canvas></div>
+                <div style="height: 320px;"><canvas id="kb-price-chart" style="width:100%;height:100%;display:block"></canvas></div>
                 <p id="kb-chart-empty" class="hidden text-sm text-slate-400 text-center py-10">Grafik verisi alınamadı.</p>
             </div>
 

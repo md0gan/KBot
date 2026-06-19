@@ -318,6 +318,11 @@ toplam K/Z, al-tut karşılaştırması ve **equity (sermaye) eğrisi grafiği**
 Bollinger'de periyot/k). Her kombinasyon aynı geçmiş veride backtest edilip **Toplam K/Z**'ye göre sıralanır;
 en iyiler tabloda listelenir. **Sonuç otomatik uygulanmaz** — beğendiğiniz kombinasyonu **Düzenle**'den elle girersiniz.
 
+**Detay grafiği:** Her botun detayında **mum (candlestick) + hacim** grafiği vardır (bağımsız canvas,
+ek kütüphane yok); zaman dilimi seçilebilir. Grid botlarında **alış (yeşil)** ve **satış (kırmızı)**
+kademeleri grafiğe yatay çizgi olarak biner, böylece fiyatın kademelere göre konumunu görürsünüz.
+**İşlem geçmişi** sayfasından tüm trade emirlerini **CSV (Excel uyumlu)** indirebilirsiniz.
+
 Her botta **bütçe**, **işlem tutarı**, **maksimum alım fiyatı** ve **mod** (sim/canlı) ayarlanır.
 Ek seçenekler: **Compounding** (açıksa gerçekleşen kâr bütçeye eklenir, alım tutarları büyür;
 zararda küçülür — kapalıysa bütçe sabit), **Zarar Durdurma** (toplam K/Z, bütçenin belirlenen
