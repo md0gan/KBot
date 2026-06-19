@@ -20,7 +20,7 @@
                     <a href="{{ route('dashboard') }}" class="font-bold text-lg tracking-tight">
                         <span class="text-brand">K</span>Bot
                     </a>
-                    @php($nav = ['dashboard' => 'Panel', 'coins.index' => 'Coinler', 'trades.index' => 'İşlemler', 'logs.index' => 'Loglar', 'settings.edit' => 'Ayarlar', 'account.edit' => 'Hesap'])
+                    @php($nav = ['dashboard' => 'Panel', 'coins.index' => 'Coinler', 'trade.index' => 'Trade', 'trades.index' => 'İşlemler', 'logs.index' => 'Loglar', 'settings.edit' => 'Ayarlar', 'account.edit' => 'Hesap'])
                     <div class="hidden md:flex items-center gap-1 text-sm">
                         @foreach ($nav as $route => $label)
                             <a href="{{ route($route) }}"

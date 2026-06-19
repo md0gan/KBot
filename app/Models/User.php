@@ -52,6 +52,16 @@ class User extends Authenticatable
         return $this->hasMany(BotLog::class);
     }
 
+    public function tradeBots(): HasMany
+    {
+        return $this->hasMany(TradeBot::class);
+    }
+
+    public function tradeOrders(): HasMany
+    {
+        return $this->hasMany(TradeOrder::class);
+    }
+
     /**
      * Kullanicinin ayar kaydini getirir, yoksa varsayilanla olusturur.
      */

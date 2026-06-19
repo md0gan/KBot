@@ -30,6 +30,9 @@ return Application::configure(basePath: dirname(__DIR__))
 
         // Canli bakiyeyi saatlik kontrol et (azalma/dusuk bakiye Telegram bildirimi).
         $schedule->command('bot:balance-check')->hourly()->withoutOverlapping();
+
+        // TRADE/SCALP modu: etkin trade botlarini her dakika calistir (yatirimdan bagimsiz).
+        $schedule->command('bot:trade')->everyMinute()->withoutOverlapping();
     })
     ->withExceptions(function (Exceptions $exceptions): void {
         //

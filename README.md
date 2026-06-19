@@ -252,6 +252,7 @@ Tanımlı zamanlamalar (`bootstrap/app.php`):
 | `bot:evaluate` | 5 dakikada bir | Açık pozisyonlarda kar-al kontrolü |
 | `bot:sync-symbols` | her gün 03:00 | Borsa lot/step/minNotional filtrelerini günceller |
 | `bot:balance-check` | saatlik | Canlı kote (TRY) bakiyesini kontrol eder, azalma/düşük bakiye Telegram bildirimi |
+| `bot:trade` | her dakika | Etkin trade botlarını (grid/rsi/ma) çalıştırır |
 
 > Komutlar kendi içinde "vakti geldi mi?" kontrolü yaptığından sık çalışmaları güvenlidir.
 > Zamanlayıcı kurulmasa bile panelden **"Botu şimdi çalıştır"** ile elle tetikleyebilirsiniz.
@@ -271,6 +272,27 @@ Anahtarlar veritabanında `APP_KEY` ile **şifrelenerek** saklanır.
 > sadece gerçek emir gönderimi için API gerekir.
 
 ---
+
+## Trade / Scalp Modu (yatırımdan tamamen ayrı)
+
+Yatırım modunun (DCA + kar-al) yanında, gün içi al-sat yapan **ayrı** bir trade modu vardır.
+Tamamen bağımsız izlenir (ayrı tablolar `trade_*`, ayrı sayfa); **aynı coini hem yatırım hem
+trade için** kullanabilirsiniz, işlemler birbirine karışmaz.
+
+Menüden **Trade → + Trade botu ekle**. Stratejiler:
+
+- **Grid:** Fiyat aralığı kademelere bölünür; fiyat bir kademenin alış seviyesine inince alır,
+  bir kademe yukarı (satış seviyesi) çıkınca satar. Aralık **manuel** (alt/üst fiyat) veya
+  **otomatik** (güncel fiyat ±%) belirlenir; bütçe kademelere bölünür.
+- **RSI:** RSI aşırı satım eşiğinin altına inince alır, aşırı alım eşiğinin üstüne çıkınca satar.
+- **MA Kesişimi:** Kısa MA uzun MA'yı yukarı keserse alır, aşağı keserse satar (SMA/EMA).
+
+Her botta **bütçe**, **işlem tutarı**, **maksimum alım fiyatı** ve **mod** (sim/canlı) ayarlanır.
+`bot:trade` komutu scheduler ile **her dakika** çalışır. İşlemler ve hatalar Telegram'a da düşer.
+Strateji çerçevesi geneldir; ileride yeni stratejiler eklenebilir.
+
+> Borsadaki gerçek bakiye ortaktır; bot her modu **kendi defterinde** (ayrı maliyet/pozisyon/kar)
+> izler. Trade işlemleri yatırım işlemlerine karışmaz.
 
 ## Telegram Bildirimleri (opsiyonel)
 
@@ -311,6 +333,7 @@ php artisan bot:dca            # Vadesi gelen alımları yap
 php artisan bot:evaluate       # Kar-al değerlendirmesi
 php artisan bot:sync-symbols   # Sembol filtrelerini güncelle
 php artisan bot:balance-check  # Canlı bakiye kontrolü + Telegram bildirimi
+php artisan bot:trade          # Trade botlarını (grid/rsi/ma) çalıştır
 php artisan bot:dca --user=1   # Sadece belirli kullanıcı için
 php artisan bot:ping           # Botun ayakta olduğunu test et
 ```

@@ -137,6 +137,63 @@ class BinanceTrClient
         }
     }
 
+    /**
+     * Kline/mum verisi. MAIN (type=1) sembollerde api.binance.me/api/v1/klines,
+     * digerlerinde binance.tr open API denenir. Standart Binance dizisi doner.
+     */
+    public function getKlines(string $symbol, string $interval = '15m', int $limit = 100, int $type = 1): array
+    {
+        $plain = str_replace('_', '', $symbol);
+
+        if ($type === 1) {
+            try {
+                $r = $this->http()->get($this->marketBaseUrl.'/api/v1/klines', [
+                    'symbol' => $plain, 'interval' => $interval, 'limit' => $limit,
+                ]);
+                $arr = $r->json();
+                if (is_array($arr) && isset($arr[0]) && is_array($arr[0])) {
+                    return $arr;
+                }
+            } catch (\Throwable $e) {
+                // yedege gec
+            }
+        }
+
+        try {
+            $r = $this->http()->get($this->baseUrl.'/open/v1/market/klines', [
+                'symbol' => $symbol, 'interval' => $interval, 'limit' => $limit,
+            ]);
+            $j = $r->json();
+            $list = data_get($j, 'data.list') ?? data_get($j, 'data');
+            if (is_array($list)) {
+                return $list;
+            }
+        } catch (\Throwable $e) {
+            // bos don
+        }
+
+        return [];
+    }
+
+    /**
+     * Kapanis fiyatlari dizisi (RSI/MA hesaplari icin). Eskiden yeniye sirali.
+     *
+     * @return array<int,float>
+     */
+    public function getCloses(string $symbol, string $interval = '15m', int $limit = 100, int $type = 1): array
+    {
+        $closes = [];
+        foreach ($this->getKlines($symbol, $interval, $limit, $type) as $k) {
+            if (is_array($k) && isset($k[4])) {
+                $closes[] = (float) $k[4];          // standart Binance: index 4 = close
+            } elseif (is_array($k) && isset($k['close'])) {
+                $closes[] = (float) $k['close'];
+            }
+        }
+
+        return $closes;
+    }
+
     /* ======================================================================
      | Signed (imzali) uc noktalar
      * ==================================================================== */
