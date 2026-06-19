@@ -252,7 +252,7 @@ Tanımlı zamanlamalar (`bootstrap/app.php`):
 | `bot:evaluate` | 5 dakikada bir | Açık pozisyonlarda kar-al kontrolü |
 | `bot:sync-symbols` | her gün 03:00 | Borsa lot/step/minNotional filtrelerini günceller |
 | `bot:balance-check` | saatlik | Canlı kote (TRY) bakiyesini kontrol eder, azalma/düşük bakiye Telegram bildirimi |
-| `bot:trade` | her dakika | Etkin trade botlarını (grid/rsi/ma) çalıştırır |
+| `bot:trade` | her 30 saniye | Etkin trade botlarını (grid/rsi/ma) çalıştırır (sub-minute) |
 | `bot:telegram-poll` | her dakika | Ortak Telegram botuna gelen "bağla" mesajlarını işler (chat eşleştirme) |
 
 > Komutlar kendi içinde "vakti geldi mi?" kontrolü yaptığından sık çalışmaları güvenlidir.
@@ -313,7 +313,7 @@ zararda küçülür — kapalıysa bütçe sabit), **Zarar Durdurma** (toplam K/
 yüzdesi kadar zarara ulaşınca bot otomatik durdurulur) ve **Trailing Take-Profit / kâr koruma**
 (toplam K/Z bir zirve yaptıktan sonra bütçenin belirlenen yüzdesi kadar geri çekilirse pozisyon
 tamamen kapatılıp kâr bankaya yazılır; bot çalışmaya devam edip yeniden girer). Hepsi Telegram'a bildirilir.
-`bot:trade` komutu scheduler ile **her dakika** çalışır. İşlemler ve hatalar Telegram'a da düşer.
+`bot:trade` komutu scheduler ile **her 30 saniyede** çalışır (Laravel sub-minute; dakikalık `schedule:run` bunu yönetir). İşlemler ve hatalar Telegram'a da düşer.
 Strateji çerçevesi geneldir; ileride yeni stratejiler eklenebilir.
 
 > Borsadaki gerçek bakiye ortaktır; bot her modu **kendi defterinde** (ayrı maliyet/pozisyon/kar)

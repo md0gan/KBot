@@ -36,8 +36,9 @@ return Application::configure(basePath: dirname(__DIR__))
         // Canli bakiyeyi saatlik kontrol et (azalma/dusuk bakiye Telegram bildirimi).
         $schedule->command('bot:balance-check')->hourly()->withoutOverlapping();
 
-        // TRADE/SCALP modu: etkin trade botlarini her dakika calistir (yatirimdan bagimsiz).
-        $schedule->command('bot:trade')->everyMinute()->withoutOverlapping();
+        // TRADE/SCALP modu: etkin trade botlarini her 30 saniyede calistir (sub-minute).
+        // Laravel, dakikalik schedule:run icinde 30sn'de bir tetikler.
+        $schedule->command('bot:trade')->everyThirtySeconds()->withoutOverlapping();
 
         // Ortak Telegram botuna gelen "bagla" mesajlarini yakala (her dakika).
         $schedule->command('bot:telegram-poll')->everyMinute()->withoutOverlapping();
