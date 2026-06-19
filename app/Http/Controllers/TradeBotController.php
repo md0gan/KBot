@@ -254,6 +254,60 @@ class TradeBotController extends Controller
         }, $filename, ['Content-Type' => 'text/csv; charset=UTF-8']);
     }
 
+    /** Performans paneli: trade emirlerinden türetilen K/Z, kazanma oranı, kıyas ve kümülatif eğri. */
+    public function performance(Request $request): View
+    {
+        $user = $request->user();
+        $quote = $user->settings()->default_quote ?: 'TRY';
+
+        $sells = $user->tradeOrders()
+            ->where('side', 'SELL')
+            ->orderBy('executed_at')
+            ->get(['trade_bot_id', 'symbol', 'strategy', 'realized_profit', 'executed_at']);
+
+        $totalRealized = (float) $sells->sum('realized_profit');
+        $totalTrades = $sells->count();
+        $wins = $sells->where('realized_profit', '>', 0)->count();
+        $winRate = $totalTrades > 0 ? $wins / $totalTrades * 100 : 0.0;
+        $totalFees = (float) $user->tradeOrders()->sum('fee');
+
+        $openPl = (float) $user->tradeBots()->with('position')->get()->sum(function ($b) {
+            $p = $b->position;
+            if (! $p) {
+                return 0.0;
+            }
+
+            return (float) (($p->last_value ?? $p->cost_basis) - $p->cost_basis);
+        });
+
+        $agg = function ($g) {
+            $n = $g->count();
+            $w = $g->where('realized_profit', '>', 0)->count();
+
+            return ['trades' => $n, 'realized' => (float) $g->sum('realized_profit'), 'win_rate' => $n ? $w / $n * 100 : 0.0];
+        };
+        $byStrategy = $sells->groupBy('strategy')->map($agg)->sortByDesc('realized');
+        $bySymbol = $sells->groupBy('symbol')->map($agg)->sortByDesc('realized');
+
+        // Kümülatif gerçekleşen K/Z (güne göre)
+        $labels = [];
+        $cum = [];
+        $running = 0.0;
+        foreach ($sells->groupBy(fn ($o) => optional($o->executed_at)->format('Y-m-d'))->sortKeys() as $day => $g) {
+            if (! $day) {
+                continue;
+            }
+            $running += (float) $g->sum('realized_profit');
+            $labels[] = $day;
+            $cum[] = round($running, 2);
+        }
+
+        return view('trade.performance', compact(
+            'totalRealized', 'totalTrades', 'winRate', 'openPl', 'totalFees',
+            'byStrategy', 'bySymbol', 'labels', 'cum', 'quote'
+        ));
+    }
+
     public function backtest(Request $request, TradeBot $tradeBot): View
     {
         $this->authorizeBot($request, $tradeBot);

@@ -42,6 +42,9 @@ return Application::configure(basePath: dirname(__DIR__))
 
         // Ortak Telegram botuna gelen "bagla" mesajlarini yakala (her dakika).
         $schedule->command('bot:telegram-poll')->everyMinute()->withoutOverlapping();
+
+        // Gunluk trade performans ozetini Telegram'dan gonder (her sabah 09:00).
+        $schedule->command('bot:daily-summary')->dailyAt('09:00')->withoutOverlapping();
     })
     ->withExceptions(function (Exceptions $exceptions): void {
         //

@@ -254,6 +254,7 @@ Tanımlı zamanlamalar (`bootstrap/app.php`):
 | `bot:balance-check` | saatlik | Canlı kote (TRY) bakiyesini kontrol eder, azalma/düşük bakiye Telegram bildirimi |
 | `bot:trade` | her 30 saniye | Etkin trade botlarını (grid/rsi/ma) çalıştırır (sub-minute) |
 | `bot:telegram-poll` | her dakika | Ortak Telegram botuna gelen "bağla" mesajlarını işler (chat eşleştirme) |
+| `bot:daily-summary` | her gün 09:00 | Telegram bağlı kullanıcılara günlük trade performans özeti gönderir |
 
 > Komutlar kendi içinde "vakti geldi mi?" kontrolü yaptığından sık çalışmaları güvenlidir.
 > Zamanlayıcı kurulmasa bile panelden **"Botu şimdi çalıştır"** ile elle tetikleyebilirsiniz.
@@ -324,6 +325,12 @@ kademeleri grafiğe yatay çizgi olarak biner, böylece fiyatın kademelere gör
 **İşlem geçmişi** sayfasından tüm trade emirlerini **CSV (Excel uyumlu)** indirebilirsiniz.
 Botlara kısa bir **etiket** (örn. "uzun vadeli", "test") verip listede **etikete göre filtreleyebilirsiniz**;
 ayrıca isim ve serbest **not** alanları vardır.
+
+**Performans paneli:** Trade → **Performans** sayfasında gerçekleşen K/Z, açık K/Z, kazanma oranı,
+ödenen komisyon, **kümülatif K/Z eğrisi** ve **strateji/coin bazında kıyas** tablosu yer alır
+(hepsi işlem geçmişinden türetilir, salt-okunur). Ayrıca her sabah 09:00'da Telegram bağlı
+kullanıcılara **günlük performans özeti** gönderilir (`bot:daily-summary`: son 24 saat K/Z, açık K/Z,
+toplam gerçekleşen, en iyi bot).
 
 Her botta **bütçe**, **işlem tutarı**, **maksimum alım fiyatı** ve **mod** (sim/canlı) ayarlanır.
 Ek seçenekler: **Compounding** (açıksa gerçekleşen kâr bütçeye eklenir, alım tutarları büyür;
@@ -408,6 +415,7 @@ php artisan bot:balance-check  # Canlı bakiye kontrolü + Telegram bildirimi
 php artisan bot:trade          # Trade botlarını (grid/rsi/ma) çalıştır
 php artisan bot:telegram-poll  # Ortak Telegram botuna gelen "bağla" mesajlarını işle (webhook yoksa)
 php artisan bot:telegram-webhook # Ortak bot için webhook'u (yeniden) kur (APP_URL https olmalı)
+php artisan bot:daily-summary  # Günlük trade performans özetini Telegram'dan gönder
 php artisan bot:dca --user=1   # Sadece belirli kullanıcı için
 php artisan bot:ping           # Botun ayakta olduğunu test et
 ```

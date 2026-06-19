@@ -89,6 +89,7 @@ Route::middleware('auth')->group(function () {
     Route::get('trade', [TradeBotController::class, 'index'])->name('trade.index');
     Route::get('trade/orders', [TradeBotController::class, 'orders'])->name('trade.orders');
     Route::get('trade/orders/export', [TradeBotController::class, 'exportOrders'])->name('trade.orders.export');
+    Route::get('trade/performance', [TradeBotController::class, 'performance'])->name('trade.performance');
     Route::get('trade/create', [TradeBotController::class, 'create'])->name('trade.create');
     Route::post('trade', [TradeBotController::class, 'store'])->name('trade.store');
     Route::get('trade/{tradeBot}', [TradeBotController::class, 'show'])->name('trade.show');
