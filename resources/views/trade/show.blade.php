@@ -24,7 +24,6 @@
             <span class="text-xs px-2 py-0.5 rounded-full bg-slate-100 text-slate-500">{{ config('bot.modes')[$tradeBot->mode] ?? $tradeBot->mode }}</span>
         </div>
         <div class="flex flex-wrap items-center gap-2">
-            @include('trade._autorefresh')
             <form method="POST" action="{{ route('trade.run', $tradeBot) }}">@csrf
                 <button class="px-3 py-2 text-sm rounded-lg bg-slate-900 text-white hover:bg-slate-700">▶ Çalıştır</button>
             </form>
@@ -42,28 +41,9 @@
         </div>
     </div>
 
-    {{-- Fiyat grafigi (mum kapanislari) + grid kademeleri --}}
-    <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-5 mb-6">
-        <div class="flex flex-wrap items-center justify-between gap-2 mb-3">
-            <h2 class="font-semibold">Fiyat Grafiği <span class="text-xs font-normal text-slate-400">{{ $tradeBot->symbol }}</span></h2>
-            <div class="flex items-center gap-2">
-                @if ($tradeBot->strategy === 'grid')
-                    <span class="text-xs text-slate-400">— <span class="text-emerald-600 font-medium">━ alış</span> · <span class="text-red-500">┄ satış</span></span>
-                @endif
-                <select id="kb-chart-interval" class="rounded-md border-slate-300 text-xs py-1">
-                    @foreach (['1m','5m','15m','30m','1h','4h','1d'] as $iv)
-                        <option value="{{ $iv }}" @selected($iv === '1h')>{{ $iv }}</option>
-                    @endforeach
-                </select>
-            </div>
-        </div>
-        <div style="height: 320px;"><canvas id="kb-price-chart"></canvas></div>
-        <p id="kb-chart-empty" class="hidden text-sm text-slate-400 text-center py-10">Grafik verisi alınamadı.</p>
-    </div>
-
     <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
     <script>
-        (function () {
+        document.addEventListener('DOMContentLoaded', function () {
             var canvas = document.getElementById('kb-price-chart');
             if (!canvas) return;
             var sel = document.getElementById('kb-chart-interval');
@@ -133,7 +113,7 @@
             }
             sel.addEventListener('change', function () { try { localStorage.setItem(KEY, sel.value); } catch (e) {} load(); });
             load();
-        })();
+        });
     </script>
 
     <div class="grid lg:grid-cols-3 gap-6">
@@ -194,6 +174,25 @@
         </div>
 
         <div class="lg:col-span-2 space-y-6">
+            {{-- Fiyat grafiği (mum kapanışları) + grid kademeleri --}}
+            <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-5">
+                <div class="flex flex-wrap items-center justify-between gap-2 mb-3">
+                    <h2 class="font-semibold">Fiyat Grafiği <span class="text-xs font-normal text-slate-400">{{ $tradeBot->symbol }}</span></h2>
+                    <div class="flex items-center gap-2">
+                        @if ($tradeBot->strategy === 'grid')
+                            <span class="text-xs text-slate-400">— <span class="text-emerald-600 font-medium">━ alış</span> · <span class="text-red-500">┄ satış</span></span>
+                        @endif
+                        <select id="kb-chart-interval" class="rounded-md border-slate-300 text-xs py-1">
+                            @foreach (['1m','5m','15m','30m','1h','4h','1d'] as $iv)
+                                <option value="{{ $iv }}" @selected($iv === '1h')>{{ $iv }}</option>
+                            @endforeach
+                        </select>
+                    </div>
+                </div>
+                <div style="height: 300px;"><canvas id="kb-price-chart"></canvas></div>
+                <p id="kb-chart-empty" class="hidden text-sm text-slate-400 text-center py-10">Grafik verisi alınamadı.</p>
+            </div>
+
             @if ($tradeBot->strategy === 'grid' && $levels->isNotEmpty())
                 <div class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
                     <div class="px-5 py-3 border-b border-slate-100 font-semibold">Grid Kademeleri</div>
