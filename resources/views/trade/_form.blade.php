@@ -231,7 +231,7 @@
             </div>
             <div>
                 <label class="block text-sm font-medium text-slate-700 mb-1">Pencere (saat)</label>
-                <input type="number" name="v2_buy_window_h" step="0.5" min="0.1" max="168" value="{{ old('v2_buy_window_h', $p['v2_buy_window_h'] ?? 4) }}"
+                <input type="number" name="v2_buy_window_h" step="any" min="0.1" max="168" value="{{ old('v2_buy_window_h', $p['v2_buy_window_h'] ?? 4) }}"
                        class="w-full rounded-lg border-slate-300 focus:border-sky-500 focus:ring-sky-500">
                 <p class="text-xs text-slate-400 mt-1">Örn. maks 3 alım + 4 saat: sert düşüşte en fazla 4 saatte 3 alım; sermaye kademeli yatırılır.</p>
             </div>
