@@ -325,6 +325,12 @@ Strateji çerçevesi geneldir; ileride yeni stratejiler eklenebilir.
 > Borsadaki gerçek bakiye ortaktır; bot her modu **kendi defterinde** (ayrı maliyet/pozisyon/kar)
 > izler. Trade işlemleri yatırım işlemlerine karışmaz.
 
+**API dayanıklılığı:** Fiyat/mum/bakiye gibi **okuma** çağrıları bağlantı/zaman aşımı hatasında
+otomatik **3 kez** (artan beklemeyle) yeniden denenir. **Emir** (alım/satım) çağrıları güvenlik için
+**asla** tekrar denenmez — zaman aşımına uğrayan bir emir borsada dolmuş olabilir, ikinci kez göndermek
+çift işlem riski yaratır. API/işlem hataları üst üste 3 turdur sürerse Telegram'dan **tek** bir uyarı
+gelir (her turda değil); toparlayınca kısa bir bilgi notu düşer.
+
 ## Telegram Bildirimleri (opsiyonel)
 
 Bildirimler **hesaba bağlıdır**: her kullanıcı kendi Telegram'ını bağlar ve bildirimleri yalnızca

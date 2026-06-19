@@ -76,7 +76,7 @@ class BinanceTrClient
      */
     public function getSymbols(): array
     {
-        $j = $this->http()->get($this->baseUrl.'/open/v1/common/symbols')->json();
+        $j = $this->http(true)->get($this->baseUrl.'/open/v1/common/symbols')->json();
 
         return (array) (data_get($j, 'data.list') ?? data_get($j, 'data') ?? []);
     }
@@ -92,7 +92,7 @@ class BinanceTrClient
         if ($type === 1) {
             // 1) ticker/price
             $price = $this->tryPrice(
-                fn () => $this->http()->get($this->marketBaseUrl.'/api/v3/ticker/price', ['symbol' => $plain]),
+                fn () => $this->http(true)->get($this->marketBaseUrl.'/api/v3/ticker/price', ['symbol' => $plain]),
                 fn ($j) => data_get($j, 'price')
             );
             if ($price !== null) {
@@ -101,7 +101,7 @@ class BinanceTrClient
 
             // 2) son islemler
             $price = $this->tryPrice(
-                fn () => $this->http()->get($this->marketBaseUrl.'/api/v3/trades', ['symbol' => $plain, 'limit' => 1]),
+                fn () => $this->http(true)->get($this->marketBaseUrl.'/api/v3/trades', ['symbol' => $plain, 'limit' => 1]),
                 fn ($j) => data_get($j, '0.price')
             );
             if ($price !== null) {
@@ -111,7 +111,7 @@ class BinanceTrClient
 
         // 3) binance.tr open market trades (type != 1 veya yedek)
         $price = $this->tryPrice(
-            fn () => $this->http()->get($this->baseUrl.'/open/v1/market/trades', ['symbol' => $symbol, 'limit' => 1]),
+            fn () => $this->http(true)->get($this->baseUrl.'/open/v1/market/trades', ['symbol' => $symbol, 'limit' => 1]),
             fn ($j) => data_get($j, 'data.list.0.price') ?? data_get($j, 'data.0.price')
         );
         if ($price !== null) {
@@ -147,7 +147,7 @@ class BinanceTrClient
 
         if ($type === 1) {
             try {
-                $r = $this->http()->get($this->marketBaseUrl.'/api/v1/klines', [
+                $r = $this->http(true)->get($this->marketBaseUrl.'/api/v1/klines', [
                     'symbol' => $plain, 'interval' => $interval, 'limit' => $limit,
                 ]);
                 $arr = $r->json();
@@ -160,7 +160,7 @@ class BinanceTrClient
         }
 
         try {
-            $r = $this->http()->get($this->baseUrl.'/open/v1/market/klines', [
+            $r = $this->http(true)->get($this->baseUrl.'/open/v1/market/klines', [
                 'symbol' => $symbol, 'interval' => $interval, 'limit' => $limit,
             ]);
             $j = $r->json();
@@ -373,11 +373,22 @@ class BinanceTrClient
      | Altyapi
      * ==================================================================== */
 
-    protected function http(): PendingRequest
+    protected function http(bool $retry = false): PendingRequest
     {
-        return Http::timeout($this->timeout)
+        $req = Http::timeout($this->timeout)
             ->acceptJson()
             ->withHeaders($this->apiKey ? ['X-MBX-APIKEY' => $this->apiKey] : []);
+
+        if ($retry) {
+            // Yalnizca baglanti/timeout hatalarinda 3 kez tekrar dene (artan backoff).
+            // SADECE idempotent GET okumalarinda kullanilir; emir POST'lari ASLA
+            // tekrar denenmez (zaman asimina ugrayan emir borsada dolmus olabilir).
+            $req = $req->retry(3, fn (int $attempt) => $attempt * 300, function ($e) {
+                return $e instanceof \Illuminate\Http\Client\ConnectionException;
+            }, throw: false);
+        }
+
+        return $req;
     }
 
     protected function timestamp(): int
@@ -413,7 +424,7 @@ class BinanceTrClient
         $url = $this->baseUrl.$path;
 
         if (strtoupper($method) === 'GET') {
-            $response = $this->http()->get($url.'?'.$payload);
+            $response = $this->http(true)->get($url.'?'.$payload);
         } else {
             $response = $this->http()
                 ->withBody($payload, 'application/x-www-form-urlencoded')

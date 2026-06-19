@@ -119,16 +119,22 @@ class TradeEngine
         }
 
         $results = [];
+        $errors = 0;
+        $lastError = '';
         foreach ($this->user->tradeBots()->enabled()->with('position')->get() as $bot) {
             try {
                 foreach ($this->run($bot) as $line) {
                     $results[] = "[{$bot->symbol}/{$bot->strategy}] {$line}";
                 }
             } catch (\Throwable $e) {
-                $this->notifyError("Trade {$bot->symbol}: ".$e->getMessage());
+                $errors++;
+                $lastError = "{$bot->symbol}: ".$e->getMessage();
                 $results[] = "[HATA {$bot->symbol}] ".$e->getMessage();
             }
         }
+
+        // Ust uste hata takibi: her turda spam yerine esikte/toparlamada tek bildirim.
+        $errors > 0 ? $this->recordApiError($lastError) : $this->recordApiRecovered();
 
         return $results ?: ['Etkin trade botu yok.'];
     }
@@ -805,5 +811,38 @@ class TradeEngine
         if ($this->notifier->notifyErrors) {
             $this->notifier->send("⚠️ Hata — {$message}");
         }
+    }
+
+    /**
+     * Ust uste API/islem hatasi takibi. Esige (3 ardisik tur) ulasinca BIR kez
+     * Telegram uyarisi gonderir; sonraki turlarda spam yapmaz.
+     */
+    protected function recordApiError(string $message): void
+    {
+        $key = "trade_api_err_{$this->user->id}";
+        $streak = (int) AppSetting::get($key, 0) + 1;
+        AppSetting::put($key, (string) $streak);
+
+        if ($streak === 3 && $this->notifier->notifyErrors) {
+            $this->notifier->send(
+                "⚠️ Trade: API/işlem hataları üst üste 3 turdur tekrarlanıyor.\n".
+                "Son hata: {$message}\n".
+                'API anahtarı, ağ bağlantısı veya bakiye sorunlu olabilir.'
+            );
+        }
+    }
+
+    /** Hata serisi bittiyse bayragi sifirlar; esige ulasilmissa toparlama bilgisi yollar. */
+    protected function recordApiRecovered(): void
+    {
+        $key = "trade_api_err_{$this->user->id}";
+        $streak = (int) AppSetting::get($key, 0);
+        if ($streak === 0) {
+            return;
+        }
+        if ($streak >= 3 && $this->notifier->notifyErrors) {
+            $this->notifier->send('✅ Trade: API/işlemler tekrar normal.');
+        }
+        AppSetting::forget($key);
     }
 }
