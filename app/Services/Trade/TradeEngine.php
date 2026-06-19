@@ -792,9 +792,13 @@ class TradeEngine
 
         $emoji = $order->side === 'BUY' ? '🟢' : '💰';
         $modeLabel = $order->mode === 'live' ? 'CANLI' : 'sim';
+        $sideLabel = $order->side === 'BUY' ? 'ALIM' : 'SATIŞ';
+        $title = $bot->name ?: $bot->symbol;
+        $sub = $bot->name ? ($bot->symbol.' · '.$bot->strategyLabel()) : $bot->strategyLabel();
 
         $lines = [
-            "{$emoji} [Trade/{$bot->strategyLabel()}] {$order->side} — {$bot->symbol} ({$modeLabel})",
+            "{$emoji} {$sideLabel} · {$title} ({$modeLabel})",
+            "{$sub} — ".kb_reason_label($order->reason),
             "Miktar: ".kb_qty($order->quantity)." {$bot->base_asset}",
             "Fiyat: ".kb_price($order->price)." {$bot->quote_asset}",
             "Tutar: ".kb_money($order->quote_amount)." {$bot->quote_asset}",

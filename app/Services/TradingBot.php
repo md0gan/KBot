@@ -608,6 +608,7 @@ class TradingBot
 
         $lines = [
             "{$emoji} {$trade->kindLabel()} — {$coin->symbol} ({$modeLabel})",
+            "Sebep: ".kb_reason_label($trade->reason),
             "Miktar: ".kb_qty($trade->quantity)." {$coin->base_asset}",
             "Fiyat: ".kb_price($trade->price)." {$coin->quote_asset}",
             "Tutar: ".kb_money($trade->quote_amount)." {$coin->quote_asset}",
