@@ -93,6 +93,21 @@
             <span class="text-sm text-slate-700">Kârı bütçeye ekle (compounding)</span>
         </label>
     </div>
+
+    <div>
+        <label class="block text-sm font-medium text-slate-700 mb-1">Üst Zaman Dilimi Trend Filtresi — EMA Periyot (0 = kapalı)</label>
+        <input type="number" name="htf_ma" min="0" max="400" value="{{ old('htf_ma', $p['htf_ma'] ?? 0) }}"
+               class="w-full rounded-lg border-slate-300 focus:border-sky-500 focus:ring-sky-500">
+        <p class="text-xs text-slate-400 mt-1">Yalnızca RSI/MA/MACD/Bollinger (grid'i etkilemez). 0 = kapalı. Alım yalnızca üst zaman diliminde fiyat EMA(periyot)'ın üzerindeyse yapılır.</p>
+    </div>
+    <div>
+        <label class="block text-sm font-medium text-slate-700 mb-1">Üst Zaman Dilimi</label>
+        <select name="htf_interval" class="w-full rounded-lg border-slate-300 focus:border-sky-500 focus:ring-sky-500">
+            @foreach (['15m','30m','1h','4h','1d','1w'] as $iv)
+                <option value="{{ $iv }}" @selected(old('htf_interval', $p['htf_interval'] ?? '4h') === $iv)>{{ $iv }}</option>
+            @endforeach
+        </select>
+    </div>
 </div>
 
 {{-- Grid parametreleri --}}

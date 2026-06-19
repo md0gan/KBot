@@ -293,6 +293,9 @@ class TradeBotController extends Controller
             'trend_ma' => ['nullable', 'integer', 'min:0', 'max:400'],
             'require_above_zero' => ['nullable', 'boolean'],
             'confirm_rsi' => ['nullable', 'boolean'],
+            // ust zaman dilimi (HTF) trend filtresi — indikator stratejileri
+            'htf_interval' => ['nullable', 'string', 'max:8'],
+            'htf_ma' => ['nullable', 'integer', 'min:0', 'max:400'],
         ]);
     }
 
@@ -346,6 +349,9 @@ class TradeBotController extends Controller
         $params['compounding'] = (bool) ($d['compounding'] ?? false);
         $params['max_loss_pct'] = (float) ($d['max_loss_pct'] ?? 0);
         $params['trail_tp_pct'] = (float) ($d['trail_tp_pct'] ?? 0);
+        // Ust zaman dilimi trend filtresi (yalnizca indikator stratejilerinde etkilidir)
+        $params['htf_interval'] = $d['htf_interval'] ?? '4h';
+        $params['htf_ma'] = (int) ($d['htf_ma'] ?? 0);
 
         return $params;
     }

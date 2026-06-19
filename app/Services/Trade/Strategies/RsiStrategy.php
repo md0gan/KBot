@@ -31,6 +31,9 @@ class RsiStrategy implements Strategy
         $holding = $pos && $pos->quantity > 0;
 
         if ($rsi <= $oversold && ! $holding) {
+            if (! $engine->htfTrendOk($bot)) {
+                return ['RSI '.round($rsi, 1)." ≤ {$oversold} ama üst zaman dilimi trendi uygun değil → bekle"];
+            }
             $order = $engine->buy($bot, $engine->effectiveOrderSize($bot), 'rsi_buy', $price);
 
             return [$order

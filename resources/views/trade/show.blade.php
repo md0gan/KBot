@@ -181,6 +181,9 @@
                         <div class="flex justify-between"><dt class="text-slate-500">MA</dt><dd>{{ strtoupper($p['ma_type'] ?? 'ema') }} {{ $p['short'] ?? 9 }}/{{ $p['long'] ?? 21 }}</dd></div>
                         <div class="flex justify-between"><dt class="text-slate-500">İşlem tutarı</dt><dd>{{ kb_money($tradeBot->order_size) }}</dd></div>
                     @endif
+                    @if (($p['htf_ma'] ?? 0) > 0 && $tradeBot->strategy !== 'grid')
+                        <div class="flex justify-between"><dt class="text-slate-500">Üst ZD trend filtresi</dt><dd>{{ $p['htf_interval'] ?? '4h' }} · EMA{{ $p['htf_ma'] }}</dd></div>
+                    @endif
                     <div class="flex justify-between"><dt class="text-slate-500">Son sinyal</dt><dd>{{ $tradeBot->last_signal ?? '—' }}</dd></div>
                     <div class="flex justify-between"><dt class="text-slate-500">Son çalışma</dt><dd>{{ $tradeBot->last_run_at?->format('d.m.Y H:i') ?? '—' }}</dd></div>
                 </dl>

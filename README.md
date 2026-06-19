@@ -304,6 +304,10 @@ Menüden **Trade → + Trade botu ekle**. Stratejiler:
 (yalnızca fiyat EMA üzerindeyken al), MACD'de **sıfır çizgisi** (yalnızca MACD > 0 iken al),
 Bollinger'de **RSI onayı** (alımda RSI ≤ 40). Bu filtreler hem canlıda hem backtest'te uygulanır.
 
+**Üst zaman dilimi (HTF) trend onayı:** RSI/MA/MACD/Bollinger için, alım yalnızca **üst zaman diliminde**
+(örn. 4h) fiyat **EMA(periyot)**'ın üzerindeyse yapılır (trend yukarı). "EMA Periyot = 0" ile kapalıdır;
+grid'i etkilemez. Bu filtre **canlıda** uygulanır (backtest ham strateji sinyallerini ölçer; stop-loss/trailing gibi).
+
 **Backtest:** Her trade botunun detayında **Backtest** ile, botun kayıtlı ayarlarını geçmiş mum
 verisi üzerinde simüle edersiniz (gerçek emir verilmez). Sonuçta işlem sayısı, kazanma oranı,
 toplam K/Z, al-tut karşılaştırması ve **equity (sermaye) eğrisi grafiği** gösterilir.

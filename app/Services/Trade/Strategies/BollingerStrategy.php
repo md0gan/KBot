@@ -30,6 +30,9 @@ class BollingerStrategy implements Strategy
         $holding = $pos && $pos->quantity > 0;
 
         if ($price <= $bands['lower'] && ! $holding) {
+            if (! $engine->htfTrendOk($bot)) {
+                return ['BB al sinyali var ama üst zaman dilimi trendi uygun değil.'];
+            }
             if (! $this->passesEntryFilters($bot, $closes, $price)) {
                 return ['BB al sinyali var ama filtre (trend/RSI) engelledi.'];
             }

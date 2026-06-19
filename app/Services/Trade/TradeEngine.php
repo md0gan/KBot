@@ -71,6 +71,40 @@ class TradeEngine
         return $size;
     }
 
+    /**
+     * Ust zaman dilimi (HTF) trend onayi: htf_ma >= 2 ise htf_interval kapanislari
+     * uzerinde EMA(htf_ma) hesaplar; son kapanis EMA'nin >= ustundeyse trend YUKARI
+     * sayilir (alima izin). Filtre kapali veya veri yetersizse true (engelleme yok).
+     * Indikator stratejileri alim oncesi bunu cagirir; grid cagirmaz.
+     */
+    public function htfTrendOk(TradeBot $bot): bool
+    {
+        $ma = (int) $bot->param('htf_ma', 0);
+        if ($ma < 2) {
+            return true; // filtre kapali
+        }
+
+        $interval = (string) $bot->param('htf_interval', '4h');
+        $closes = $this->client->getCloses($bot->symbol, $interval, $ma + 80, $bot->symbol_type ?? 1);
+        if (count($closes) < $ma + 1) {
+            return true; // veri yetersiz -> engelleme yapma
+        }
+
+        $ema = Indicators::emaSeries($closes, $ma);
+        $lastEma = null;
+        for ($i = count($ema) - 1; $i >= 0; $i--) {
+            if ($ema[$i] !== null) {
+                $lastEma = (float) $ema[$i];
+                break;
+            }
+        }
+        if ($lastEma === null) {
+            return true;
+        }
+
+        return (float) end($closes) >= $lastEma;
+    }
+
     /* ======================================================================
      | Calistirma
      * ==================================================================== */

@@ -31,6 +31,9 @@ class MacdStrategy implements Strategy
         $holding = $pos && $pos->quantity > 0;
 
         if ($cross === 'bullish' && ! $holding) {
+            if (! $engine->htfTrendOk($bot)) {
+                return ['MACD al sinyali var ama üst zaman dilimi trendi uygun değil.'];
+            }
             if (! $this->passesEntryFilters($bot, $closes, $price, $fast, $slow, $signal)) {
                 return ['MACD al sinyali var ama filtre (trend/sıfır çizgisi) engelledi.'];
             }

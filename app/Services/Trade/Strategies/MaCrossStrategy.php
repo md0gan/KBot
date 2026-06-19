@@ -34,6 +34,9 @@ class MaCrossStrategy implements Strategy
         $holding = $pos && $pos->quantity > 0;
 
         if ($signal === 'bullish' && ! $holding) {
+            if (! $engine->htfTrendOk($bot)) {
+                return ['MA yukarı kesti ama üst zaman dilimi trendi uygun değil → bekle'];
+            }
             $order = $engine->buy($bot, $engine->effectiveOrderSize($bot), 'ma_buy', $price);
 
             return [$order ? 'MA yukari kesti → AL' : 'MA al sinyali ama alim yapilamadi.'];
