@@ -21,11 +21,23 @@ class GridStrategy implements Strategy
             return ['Grid kademeleri kurulamadi (aralik gecersiz olabilir).'];
         }
 
+        $lines = [];
+
+        // Trailing: fiyat aralik disina ciktiysa ve acik pozisyon yoksa yeniden ortala
+        if ((bool) $bot->param('trailing', false)) {
+            $high = (float) $levels->max('sell_price');
+            $low = (float) $levels->min('buy_price');
+            $flat = $levels->every(fn ($l) => $l->status !== 'holding');
+            if ($flat && ($price > $high || $price < $low)) {
+                $engine->recenterGrid($bot, $price);
+                $levels = $bot->gridLevels()->get();
+                $lines[] = 'Grid yeniden ortalandı @ '.kb_price($price);
+            }
+        }
+
         $perLevelQuote = $bot->budget > 0
             ? $bot->budget / $levels->count()
             : $bot->order_size;
-
-        $lines = [];
 
         foreach ($levels as $level) {
             if ($level->status === 'waiting_buy' && $price <= $level->buy_price) {

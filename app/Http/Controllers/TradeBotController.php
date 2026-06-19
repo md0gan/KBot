@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\TradeBot;
+use App\Services\Trade\Backtest;
 use App\Services\Trade\TradeEngine;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -201,6 +202,38 @@ class TradeBotController extends Controller
         return view('trade.orders', compact('orders', 'bots'));
     }
 
+    public function backtest(Request $request, TradeBot $tradeBot): View
+    {
+        $this->authorizeBot($request, $tradeBot);
+
+        $interval = (string) $request->input('interval', $tradeBot->param('interval', '15m'));
+        $bars = max(50, min(1000, (int) $request->input('bars', 500)));
+
+        $result = null;
+        $error = null;
+
+        if ($request->filled('run')) {
+            try {
+                $closes = (new TradeEngine($request->user()))->client()
+                    ->getCloses($tradeBot->symbol, $interval, $bars, $tradeBot->symbol_type ?? 1);
+
+                if (count($closes) < 30) {
+                    $error = 'Yeterli geçmiş veri çekilemedi (sembol / zaman dilimi / borsa erişimi?).';
+                } else {
+                    $result = Backtest::run($tradeBot->strategy, $tradeBot->params ?? [], $closes, (float) $tradeBot->budget, (float) $tradeBot->order_size);
+                    if (isset($result['error'])) {
+                        $error = $result['error'];
+                        $result = null;
+                    }
+                }
+            } catch (\Throwable $e) {
+                $error = $e->getMessage();
+            }
+        }
+
+        return view('trade.backtest', compact('tradeBot', 'interval', 'bars', 'result', 'error'));
+    }
+
     /* ------------------------------------------------------------------ */
 
     protected function validateData(Request $request): array
@@ -209,7 +242,7 @@ class TradeBotController extends Controller
             'name' => ['nullable', 'string', 'max:60'],
             'base_asset' => ['required', 'string', 'max:32', 'regex:/^[A-Za-z0-9]+$/'],
             'quote_asset' => ['required', 'string', 'max:16', 'regex:/^[A-Za-z0-9]+$/'],
-            'strategy' => ['required', 'in:grid,rsi,ma_cross'],
+            'strategy' => ['required', 'in:grid,rsi,ma_cross,macd,bollinger'],
             'mode' => ['required', 'in:inherit,simulation,live'],
             'budget' => ['required', 'numeric', 'min:0.00000001'],
             'order_size' => ['nullable', 'numeric', 'min:0'],
@@ -222,7 +255,8 @@ class TradeBotController extends Controller
             'upper' => ['nullable', 'numeric', 'min:0'],
             'percent' => ['nullable', 'numeric', 'min:0.1', 'max:90'],
             'levels' => ['nullable', 'integer', 'min:2', 'max:100'],
-            // rsi / ma ortak
+            'trailing' => ['nullable', 'boolean'],
+            // rsi / ma / macd / bollinger ortak
             'interval' => ['nullable', 'string', 'max:8'],
             'period' => ['nullable', 'integer', 'min:2', 'max:200'],
             'oversold' => ['nullable', 'numeric', 'min:1', 'max:99'],
@@ -230,6 +264,10 @@ class TradeBotController extends Controller
             'short' => ['nullable', 'integer', 'min:1', 'max:400'],
             'long' => ['nullable', 'integer', 'min:2', 'max:800'],
             'ma_type' => ['nullable', 'in:sma,ema'],
+            'fast' => ['nullable', 'integer', 'min:1', 'max:200'],
+            'slow' => ['nullable', 'integer', 'min:2', 'max:400'],
+            'signal' => ['nullable', 'integer', 'min:1', 'max:200'],
+            'k' => ['nullable', 'numeric', 'min:0.5', 'max:5'],
         ]);
     }
 
@@ -242,6 +280,7 @@ class TradeBotController extends Controller
                 'upper' => (float) ($d['upper'] ?? 0),
                 'percent' => (float) ($d['percent'] ?? 10),
                 'levels' => (int) ($d['levels'] ?? 5),
+                'trailing' => (bool) ($d['trailing'] ?? false),
             ],
             'rsi' => [
                 'interval' => $d['interval'] ?? '15m',
@@ -254,6 +293,17 @@ class TradeBotController extends Controller
                 'short' => (int) ($d['short'] ?? 9),
                 'long' => (int) ($d['long'] ?? 21),
                 'ma_type' => $d['ma_type'] ?? 'ema',
+            ],
+            'macd' => [
+                'interval' => $d['interval'] ?? '15m',
+                'fast' => (int) ($d['fast'] ?? 12),
+                'slow' => (int) ($d['slow'] ?? 26),
+                'signal' => (int) ($d['signal'] ?? 9),
+            ],
+            'bollinger' => [
+                'interval' => $d['interval'] ?? '15m',
+                'period' => (int) ($d['period'] ?? 20),
+                'k' => (float) ($d['k'] ?? 2),
             ],
             default => [],
         };

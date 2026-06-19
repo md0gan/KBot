@@ -90,4 +90,5 @@ Route::middleware('auth')->group(function () {
     Route::post('trade/{tradeBot}/run', [TradeBotController::class, 'runNow'])->name('trade.run');
     Route::post('trade/{tradeBot}/sell-all', [TradeBotController::class, 'sellAll'])->name('trade.sell-all');
     Route::post('trade/{tradeBot}/rebuild-grid', [TradeBotController::class, 'rebuildGrid'])->name('trade.rebuild-grid');
+    Route::get('trade/{tradeBot}/backtest', [TradeBotController::class, 'backtest'])->name('trade.backtest');
 });

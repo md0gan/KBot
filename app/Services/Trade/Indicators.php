@@ -134,4 +134,105 @@ class Indicators
 
         return null;
     }
+
+    /**
+     * MACD: macd cizgisi = EMA(fast) - EMA(slow); signal = EMA(macd, signal).
+     * Donus: ['macd' => [...], 'signal' => [...]] (closes ile hizali, erken barlar null).
+     */
+    public static function macd(array $closes, int $fast = 12, int $slow = 26, int $signalP = 9): array
+    {
+        $emaFast = self::emaSeries($closes, $fast);
+        $emaSlow = self::emaSeries($closes, $slow);
+        $n = count($closes);
+
+        $macd = [];
+        for ($i = 0; $i < $n; $i++) {
+            $macd[$i] = ($emaFast[$i] !== null && $emaSlow[$i] !== null)
+                ? $emaFast[$i] - $emaSlow[$i]
+                : null;
+        }
+
+        $signal = array_fill(0, $n, null);
+        $k = 2 / ($signalP + 1);
+        $ema = null;
+        $seen = 0;
+        for ($i = 0; $i < $n; $i++) {
+            if ($macd[$i] === null) {
+                continue;
+            }
+            $seen++;
+            if ($seen < $signalP) {
+                continue;
+            }
+            if ($ema === null) {
+                $vals = [];
+                for ($j = $i; $j >= 0 && count($vals) < $signalP; $j--) {
+                    if ($macd[$j] !== null) {
+                        $vals[] = $macd[$j];
+                    }
+                }
+                $ema = array_sum($vals) / count($vals);
+            } else {
+                $ema = $macd[$i] * $k + $ema * (1 - $k);
+            }
+            $signal[$i] = $ema;
+        }
+
+        return ['macd' => $macd, 'signal' => $signal];
+    }
+
+    /** MACD sinyal kesisimi: 'bullish' | 'bearish' | null. */
+    public static function macdCross(array $closes, int $fast = 12, int $slow = 26, int $signalP = 9): ?string
+    {
+        $r = self::macd($closes, $fast, $slow, $signalP);
+        $m = $r['macd'];
+        $s = $r['signal'];
+        $n = count($closes);
+        if ($n < 2) {
+            return null;
+        }
+
+        $mNow = $m[$n - 1] ?? null;
+        $sNow = $s[$n - 1] ?? null;
+        $mPrev = $m[$n - 2] ?? null;
+        $sPrev = $s[$n - 2] ?? null;
+        if ($mNow === null || $sNow === null || $mPrev === null || $sPrev === null) {
+            return null;
+        }
+
+        if ($mPrev <= $sPrev && $mNow > $sNow) {
+            return 'bullish';
+        }
+        if ($mPrev >= $sPrev && $mNow < $sNow) {
+            return 'bearish';
+        }
+
+        return null;
+    }
+
+    /**
+     * Bollinger bantlari (son deger). Yetersiz veri varsa null.
+     * Donus: ['upper' => , 'middle' => , 'lower' => ].
+     */
+    public static function bollinger(array $closes, int $period = 20, float $k = 2.0): ?array
+    {
+        $n = count($closes);
+        if ($n < $period) {
+            return null;
+        }
+
+        $slice = array_slice($closes, $n - $period, $period);
+        $mean = array_sum($slice) / $period;
+        $var = 0.0;
+        foreach ($slice as $c) {
+            $var += ($c - $mean) ** 2;
+        }
+        $std = sqrt($var / $period);
+
+        return [
+            'upper' => $mean + $k * $std,
+            'middle' => $mean,
+            'lower' => $mean - $k * $std,
+        ];
+    }
 }

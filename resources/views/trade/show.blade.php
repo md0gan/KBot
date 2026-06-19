@@ -34,6 +34,7 @@
                     <button class="px-3 py-2 text-sm rounded-lg border border-slate-300 hover:bg-slate-50">Grid'i yeniden kur</button>
                 </form>
             @endif
+            <a href="{{ route('trade.backtest', $tradeBot) }}" class="px-3 py-2 text-sm rounded-lg border border-slate-300 hover:bg-slate-50">Backtest</a>
             <a href="{{ route('trade.edit', $tradeBot) }}" class="px-3 py-2 text-sm rounded-lg border border-slate-300 hover:bg-slate-50">Düzenle</a>
         </div>
     </div>

@@ -307,6 +307,45 @@ class TradeEngine
         return true;
     }
 
+    /**
+     * Trailing: mevcut grid genisligini koruyarak kademeleri guncel fiyat
+     * etrafina yeniden ortalar. (Yalnizca acik pozisyon yokken cagrilmali.)
+     */
+    public function recenterGrid(TradeBot $bot, float $price): bool
+    {
+        $levels = $bot->gridLevels()->orderBy('level_index')->get();
+        if ($levels->isEmpty()) {
+            return $this->buildGrid($bot);
+        }
+
+        $count = $levels->count();
+        $low = (float) $levels->first()->buy_price;
+        $high = (float) $levels->last()->sell_price;
+        $width = $high - $low;
+        if ($width <= 0 || $price <= 0) {
+            return false;
+        }
+
+        $newLower = max(0.0, $price - $width / 2);
+        $step = $width / $count;
+
+        $bot->gridLevels()->delete();
+        for ($i = 0; $i < $count; $i++) {
+            $buy = $newLower + $step * $i;
+            TradeGridLevel::create([
+                'trade_bot_id' => $bot->id,
+                'level_index' => $i,
+                'buy_price' => $buy,
+                'sell_price' => $buy + $step,
+                'status' => 'waiting_buy',
+                'quantity' => 0,
+                'buy_order_quote' => 0,
+            ]);
+        }
+
+        return true;
+    }
+
     /* ======================================================================
      | Sembol senkronu (tek bot)
      * ==================================================================== */

@@ -105,6 +105,8 @@ class TradeBot extends Model
             'grid' => 'Grid',
             'rsi' => 'RSI',
             'ma_cross' => 'MA Kesişimi',
+            'macd' => 'MACD',
+            'bollinger' => 'Bollinger',
             default => $this->strategy,
         };
     }

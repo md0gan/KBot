@@ -29,6 +29,8 @@
             <option value="grid" @selected($curStrategy === 'grid')>Grid</option>
             <option value="rsi" @selected($curStrategy === 'rsi')>RSI (aşırı alım/satım)</option>
             <option value="ma_cross" @selected($curStrategy === 'ma_cross')>MA Kesişimi (SMA/EMA)</option>
+            <option value="macd" @selected($curStrategy === 'macd')>MACD (sinyal kesişimi)</option>
+            <option value="bollinger" @selected($curStrategy === 'bollinger')>Bollinger Bantları</option>
         </select>
     </div>
     <div>
@@ -104,6 +106,14 @@
             <input type="number" name="percent" step="0.1" min="0.1" max="90" value="{{ old('percent', $p['percent'] ?? 10) }}"
                    class="w-full rounded-lg border-slate-300 focus:border-sky-500 focus:ring-sky-500">
         </div>
+        <div class="md:col-span-2">
+            <label class="flex items-center gap-2">
+                <input type="hidden" name="trailing" value="0">
+                <input type="checkbox" name="trailing" value="1" @checked(old('trailing', $p['trailing'] ?? false))
+                       class="rounded border-slate-300 text-sky-600 focus:ring-sky-500">
+                <span class="text-sm text-slate-700">Trailing — fiyat aralık dışına çıkınca (pozisyon boşken) grid'i güncel fiyata yeniden ortala</span>
+            </label>
+        </div>
     </div>
 </div>
 
@@ -164,6 +174,61 @@
         <div>
             <label class="block text-sm font-medium text-slate-700 mb-1">Uzun Periyot</label>
             <input type="number" name="long" min="2" max="800" value="{{ old('long', $p['long'] ?? 21) }}"
+                   class="w-full rounded-lg border-slate-300 focus:border-sky-500 focus:ring-sky-500">
+        </div>
+    </div>
+</div>
+
+{{-- MACD parametreleri --}}
+<div class="strategy-params mt-5 rounded-lg border border-slate-200 bg-slate-50 p-4" data-strategy="macd">
+    <h3 class="text-sm font-semibold text-slate-700 mb-3">MACD Ayarları</h3>
+    <div class="grid md:grid-cols-4 gap-5">
+        <div>
+            <label class="block text-sm font-medium text-slate-700 mb-1">Zaman Dilimi</label>
+            <select name="interval" class="w-full rounded-lg border-slate-300 focus:border-sky-500 focus:ring-sky-500">
+                @foreach (['1m','5m','15m','30m','1h','4h','1d'] as $iv)
+                    <option value="{{ $iv }}" @selected(old('interval', $p['interval'] ?? '15m') === $iv)>{{ $iv }}</option>
+                @endforeach
+            </select>
+        </div>
+        <div>
+            <label class="block text-sm font-medium text-slate-700 mb-1">Hızlı EMA</label>
+            <input type="number" name="fast" min="1" max="200" value="{{ old('fast', $p['fast'] ?? 12) }}"
+                   class="w-full rounded-lg border-slate-300 focus:border-sky-500 focus:ring-sky-500">
+        </div>
+        <div>
+            <label class="block text-sm font-medium text-slate-700 mb-1">Yavaş EMA</label>
+            <input type="number" name="slow" min="2" max="400" value="{{ old('slow', $p['slow'] ?? 26) }}"
+                   class="w-full rounded-lg border-slate-300 focus:border-sky-500 focus:ring-sky-500">
+        </div>
+        <div>
+            <label class="block text-sm font-medium text-slate-700 mb-1">Sinyal</label>
+            <input type="number" name="signal" min="1" max="200" value="{{ old('signal', $p['signal'] ?? 9) }}"
+                   class="w-full rounded-lg border-slate-300 focus:border-sky-500 focus:ring-sky-500">
+        </div>
+    </div>
+</div>
+
+{{-- Bollinger parametreleri --}}
+<div class="strategy-params mt-5 rounded-lg border border-slate-200 bg-slate-50 p-4" data-strategy="bollinger">
+    <h3 class="text-sm font-semibold text-slate-700 mb-3">Bollinger Ayarları</h3>
+    <div class="grid md:grid-cols-3 gap-5">
+        <div>
+            <label class="block text-sm font-medium text-slate-700 mb-1">Zaman Dilimi</label>
+            <select name="interval" class="w-full rounded-lg border-slate-300 focus:border-sky-500 focus:ring-sky-500">
+                @foreach (['1m','5m','15m','30m','1h','4h','1d'] as $iv)
+                    <option value="{{ $iv }}" @selected(old('interval', $p['interval'] ?? '15m') === $iv)>{{ $iv }}</option>
+                @endforeach
+            </select>
+        </div>
+        <div>
+            <label class="block text-sm font-medium text-slate-700 mb-1">Periyot</label>
+            <input type="number" name="period" min="2" max="200" value="{{ old('period', $p['period'] ?? 20) }}"
+                   class="w-full rounded-lg border-slate-300 focus:border-sky-500 focus:ring-sky-500">
+        </div>
+        <div>
+            <label class="block text-sm font-medium text-slate-700 mb-1">Std Çarpanı (k)</label>
+            <input type="number" name="k" step="0.1" min="0.5" max="5" value="{{ old('k', $p['k'] ?? 2) }}"
                    class="w-full rounded-lg border-slate-300 focus:border-sky-500 focus:ring-sky-500">
         </div>
     </div>

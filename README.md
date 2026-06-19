@@ -283,9 +283,16 @@ Menüden **Trade → + Trade botu ekle**. Stratejiler:
 
 - **Grid:** Fiyat aralığı kademelere bölünür; fiyat bir kademenin alış seviyesine inince alır,
   bir kademe yukarı (satış seviyesi) çıkınca satar. Aralık **manuel** (alt/üst fiyat) veya
-  **otomatik** (güncel fiyat ±%) belirlenir; bütçe kademelere bölünür.
+  **otomatik** (güncel fiyat ±%) belirlenir; bütçe kademelere bölünür. **Trailing** açılırsa,
+  fiyat aralık dışına çıkıp pozisyon boşaldığında grid güncel fiyata yeniden ortalanır (piyasayı takip).
 - **RSI:** RSI aşırı satım eşiğinin altına inince alır, aşırı alım eşiğinin üstüne çıkınca satar.
 - **MA Kesişimi:** Kısa MA uzun MA'yı yukarı keserse alır, aşağı keserse satar (SMA/EMA).
+- **MACD:** MACD çizgisi sinyal çizgisini yukarı keserse alır, aşağı keserse satar.
+- **Bollinger:** Fiyat alt banda inince alır, üst banda çıkınca satar.
+
+**Backtest:** Her trade botunun detayında **Backtest** ile, botun kayıtlı ayarlarını geçmiş mum
+verisi üzerinde simüle edip (işlem sayısı, kazanma oranı, K/Z, al-tut karşılaştırması) sonucu
+görebilirsiniz — gerçek emir verilmez. (Basit simülasyon; komisyon/kayma hesaba katılmaz.)
 
 Her botta **bütçe**, **işlem tutarı**, **maksimum alım fiyatı** ve **mod** (sim/canlı) ayarlanır.
 `bot:trade` komutu scheduler ile **her dakika** çalışır. İşlemler ve hatalar Telegram'a da düşer.
