@@ -207,6 +207,22 @@
                    class="w-full rounded-lg border-slate-300 focus:border-sky-500 focus:ring-sky-500">
         </div>
     </div>
+    <div class="grid md:grid-cols-2 gap-5 mt-4">
+        <div>
+            <label class="block text-sm font-medium text-slate-700 mb-1">Trend MA filtresi (0 = kapalı)</label>
+            <input type="number" name="trend_ma" min="0" max="400" value="{{ old('trend_ma', $p['trend_ma'] ?? 0) }}"
+                   class="w-full rounded-lg border-slate-300 focus:border-sky-500 focus:ring-sky-500">
+            <p class="text-xs text-slate-400 mt-1">Doluysa yalnızca fiyat EMA(bu periyot) üzerindeyken alır.</p>
+        </div>
+        <div class="flex items-center">
+            <label class="flex items-center gap-2">
+                <input type="hidden" name="require_above_zero" value="0">
+                <input type="checkbox" name="require_above_zero" value="1" @checked(old('require_above_zero', $p['require_above_zero'] ?? false))
+                       class="rounded border-slate-300 text-sky-600 focus:ring-sky-500">
+                <span class="text-sm text-slate-700">Sadece MACD &gt; 0 iken al (sıfır çizgisi)</span>
+            </label>
+        </div>
+    </div>
 </div>
 
 {{-- Bollinger parametreleri --}}
@@ -230,6 +246,22 @@
             <label class="block text-sm font-medium text-slate-700 mb-1">Std Çarpanı (k)</label>
             <input type="number" name="k" step="0.1" min="0.5" max="5" value="{{ old('k', $p['k'] ?? 2) }}"
                    class="w-full rounded-lg border-slate-300 focus:border-sky-500 focus:ring-sky-500">
+        </div>
+    </div>
+    <div class="grid md:grid-cols-2 gap-5 mt-4">
+        <div>
+            <label class="block text-sm font-medium text-slate-700 mb-1">Trend MA filtresi (0 = kapalı)</label>
+            <input type="number" name="trend_ma" min="0" max="400" value="{{ old('trend_ma', $p['trend_ma'] ?? 0) }}"
+                   class="w-full rounded-lg border-slate-300 focus:border-sky-500 focus:ring-sky-500">
+            <p class="text-xs text-slate-400 mt-1">Doluysa yalnızca fiyat EMA(bu periyot) üzerindeyken alır.</p>
+        </div>
+        <div class="flex items-center">
+            <label class="flex items-center gap-2">
+                <input type="hidden" name="confirm_rsi" value="0">
+                <input type="checkbox" name="confirm_rsi" value="1" @checked(old('confirm_rsi', $p['confirm_rsi'] ?? false))
+                       class="rounded border-slate-300 text-sky-600 focus:ring-sky-500">
+                <span class="text-sm text-slate-700">RSI onayı (alımda RSI ≤ 40)</span>
+            </label>
         </div>
     </div>
 </div>

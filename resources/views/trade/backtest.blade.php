@@ -25,7 +25,15 @@
             </div>
             <div>
                 <label class="block text-xs text-slate-500 mb-1">Mum Sayısı (50–1000)</label>
-                <input type="number" name="bars" min="50" max="1000" value="{{ $bars }}" class="rounded-lg border-slate-300 text-sm w-32">
+                <input type="number" name="bars" min="50" max="1000" value="{{ $bars }}" class="rounded-lg border-slate-300 text-sm w-28">
+            </div>
+            <div>
+                <label class="block text-xs text-slate-500 mb-1">Komisyon (%)</label>
+                <input type="number" name="fee" step="0.01" min="0" max="5" value="{{ $fee }}" class="rounded-lg border-slate-300 text-sm w-24">
+            </div>
+            <div>
+                <label class="block text-xs text-slate-500 mb-1">Kayma (%)</label>
+                <input type="number" name="slip" step="0.01" min="0" max="5" value="{{ $slip }}" class="rounded-lg border-slate-300 text-sm w-24">
             </div>
             <button class="px-4 py-2 text-sm rounded-lg bg-sky-600 text-white font-semibold hover:bg-sky-500">Backtest çalıştır</button>
         </form>
@@ -58,6 +66,11 @@
                 </div>
             </div>
 
+            <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-5 mb-6">
+                <h2 class="font-semibold mb-3">Equity Eğrisi <span class="text-xs font-normal text-slate-400">(strateji vs al-tut)</span></h2>
+                <div style="height: 260px;"><canvas id="equityChart"></canvas></div>
+            </div>
+
             <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-5">
                 <h2 class="font-semibold mb-3">Detay</h2>
                 <dl class="text-sm grid sm:grid-cols-2 gap-x-8 gap-y-2">
@@ -69,10 +82,30 @@
                     <div class="flex justify-between"><dt class="text-slate-500">Kullanılan tutar</dt><dd>{{ kb_money($result['invested']) }} {{ $q }}</dd></div>
                 </dl>
                 <p class="mt-4 text-xs text-slate-400">
-                    Not: Basit simülasyon — komisyon, kayma (slippage) ve emir dolum gecikmeleri hesaba katılmaz.
-                    Gerçek sonuçlar farklılık gösterir; yalnızca fikir vermek içindir.
+                    Not: Komisyon (%{{ $fee }}) ve kayma (%{{ $slip }}) modele dahildir; ancak emir dolum gecikmeleri,
+                    likidite ve kısmi dolumlar hesaba katılmaz. Yalnızca fikir vermek içindir; gerçek sonuçlar farklılık gösterir.
                 </p>
             </div>
+
+            <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+            <script>
+                (function () {
+                    var c = @json($result['chart']);
+                    var el = document.getElementById('equityChart');
+                    if (!el || !window.Chart) return;
+                    new Chart(el, {
+                        type: 'line',
+                        data: {
+                            labels: c.labels,
+                            datasets: [
+                                { label: 'Strateji', data: c.equity, borderColor: '#0ea5e9', backgroundColor: 'rgba(14,165,233,0.12)', fill: true, tension: 0.2, pointRadius: 0, borderWidth: 2 },
+                                { label: 'Al-Tut', data: c.buyhold, borderColor: '#94a3b8', borderDash: [5, 5], fill: false, tension: 0.2, pointRadius: 0, borderWidth: 1.5 }
+                            ]
+                        },
+                        options: { responsive: true, maintainAspectRatio: false, interaction: { intersect: false, mode: 'index' }, plugins: { legend: { position: 'bottom' } }, scales: { x: { display: false } } }
+                    });
+                })();
+            </script>
         @endif
     </div>
 @endsection

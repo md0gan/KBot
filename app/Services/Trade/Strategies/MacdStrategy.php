@@ -31,6 +31,9 @@ class MacdStrategy implements Strategy
         $holding = $pos && $pos->quantity > 0;
 
         if ($cross === 'bullish' && ! $holding) {
+            if (! $this->passesEntryFilters($bot, $closes, $price, $fast, $slow, $signal)) {
+                return ['MACD al sinyali var ama filtre (trend/sıfır çizgisi) engelledi.'];
+            }
             $order = $engine->buy($bot, $bot->order_size, 'macd_buy', $price);
 
             return [$order ? 'MACD yukari kesti → AL' : 'MACD al sinyali ama alim yapilamadi.'];
@@ -43,5 +46,37 @@ class MacdStrategy implements Strategy
         }
 
         return [$cross ? "MACD {$cross}: pozisyon uygun degil" : 'MACD: kesisim yok'];
+    }
+
+    protected function passesEntryFilters(TradeBot $bot, array $closes, float $price, int $fast, int $slow, int $signal): bool
+    {
+        $trendMa = (int) $bot->param('trend_ma', 0);
+        if ($trendMa > 1) {
+            $last = self::lastNonNull(Indicators::emaSeries($closes, $trendMa));
+            if ($last !== null && $price < $last) {
+                return false;
+            }
+        }
+
+        if ($bot->param('require_above_zero', false)) {
+            $macdLine = Indicators::macd($closes, $fast, $slow, $signal)['macd'];
+            $last = self::lastNonNull($macdLine);
+            if ($last !== null && $last <= 0) {
+                return false;
+            }
+        }
+
+        return true;
+    }
+
+    protected static function lastNonNull(array $series): ?float
+    {
+        for ($i = count($series) - 1; $i >= 0; $i--) {
+            if ($series[$i] !== null) {
+                return (float) $series[$i];
+            }
+        }
+
+        return null;
     }
 }

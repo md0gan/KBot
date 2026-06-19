@@ -208,6 +208,8 @@ class TradeBotController extends Controller
 
         $interval = (string) $request->input('interval', $tradeBot->param('interval', '15m'));
         $bars = max(50, min(1000, (int) $request->input('bars', 500)));
+        $fee = max(0.0, min(5.0, (float) $request->input('fee', 0.1)));    // % komisyon
+        $slip = max(0.0, min(5.0, (float) $request->input('slip', 0.05))); // % kayma
 
         $result = null;
         $error = null;
@@ -220,7 +222,15 @@ class TradeBotController extends Controller
                 if (count($closes) < 30) {
                     $error = 'Yeterli geçmiş veri çekilemedi (sembol / zaman dilimi / borsa erişimi?).';
                 } else {
-                    $result = Backtest::run($tradeBot->strategy, $tradeBot->params ?? [], $closes, (float) $tradeBot->budget, (float) $tradeBot->order_size);
+                    $result = Backtest::run(
+                        $tradeBot->strategy,
+                        $tradeBot->params ?? [],
+                        $closes,
+                        (float) $tradeBot->budget,
+                        (float) $tradeBot->order_size,
+                        $fee / 100,
+                        $slip / 100,
+                    );
                     if (isset($result['error'])) {
                         $error = $result['error'];
                         $result = null;
@@ -231,7 +241,7 @@ class TradeBotController extends Controller
             }
         }
 
-        return view('trade.backtest', compact('tradeBot', 'interval', 'bars', 'result', 'error'));
+        return view('trade.backtest', compact('tradeBot', 'interval', 'bars', 'fee', 'slip', 'result', 'error'));
     }
 
     /* ------------------------------------------------------------------ */
@@ -268,6 +278,10 @@ class TradeBotController extends Controller
             'slow' => ['nullable', 'integer', 'min:2', 'max:400'],
             'signal' => ['nullable', 'integer', 'min:1', 'max:200'],
             'k' => ['nullable', 'numeric', 'min:0.5', 'max:5'],
+            // ek filtreler (macd/bollinger)
+            'trend_ma' => ['nullable', 'integer', 'min:0', 'max:400'],
+            'require_above_zero' => ['nullable', 'boolean'],
+            'confirm_rsi' => ['nullable', 'boolean'],
         ]);
     }
 
@@ -299,11 +313,15 @@ class TradeBotController extends Controller
                 'fast' => (int) ($d['fast'] ?? 12),
                 'slow' => (int) ($d['slow'] ?? 26),
                 'signal' => (int) ($d['signal'] ?? 9),
+                'trend_ma' => (int) ($d['trend_ma'] ?? 0),
+                'require_above_zero' => (bool) ($d['require_above_zero'] ?? false),
             ],
             'bollinger' => [
                 'interval' => $d['interval'] ?? '15m',
                 'period' => (int) ($d['period'] ?? 20),
                 'k' => (float) ($d['k'] ?? 2),
+                'trend_ma' => (int) ($d['trend_ma'] ?? 0),
+                'confirm_rsi' => (bool) ($d['confirm_rsi'] ?? false),
             ],
             default => [],
         };

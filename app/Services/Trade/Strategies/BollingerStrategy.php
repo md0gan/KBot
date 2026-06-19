@@ -30,6 +30,9 @@ class BollingerStrategy implements Strategy
         $holding = $pos && $pos->quantity > 0;
 
         if ($price <= $bands['lower'] && ! $holding) {
+            if (! $this->passesEntryFilters($bot, $closes, $price)) {
+                return ['BB al sinyali var ama filtre (trend/RSI) engelledi.'];
+            }
             $order = $engine->buy($bot, $bot->order_size, 'bb_buy', $price);
 
             return [$order ? 'Fiyat alt bantta → AL' : 'BB al sinyali ama alim yapilamadi.'];
@@ -42,5 +45,32 @@ class BollingerStrategy implements Strategy
         }
 
         return ['Bollinger: bant içinde, bekle'];
+    }
+
+    protected function passesEntryFilters(TradeBot $bot, array $closes, float $price): bool
+    {
+        $trendMa = (int) $bot->param('trend_ma', 0);
+        if ($trendMa > 1) {
+            $ema = Indicators::emaSeries($closes, $trendMa);
+            $last = null;
+            for ($i = count($ema) - 1; $i >= 0; $i--) {
+                if ($ema[$i] !== null) {
+                    $last = (float) $ema[$i];
+                    break;
+                }
+            }
+            if ($last !== null && $price < $last) {
+                return false;
+            }
+        }
+
+        if ($bot->param('confirm_rsi', false)) {
+            $rsi = Indicators::rsi($closes, 14);
+            if ($rsi !== null && $rsi > 40) {
+                return false;
+            }
+        }
+
+        return true;
     }
 }

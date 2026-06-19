@@ -290,9 +290,14 @@ Menüden **Trade → + Trade botu ekle**. Stratejiler:
 - **MACD:** MACD çizgisi sinyal çizgisini yukarı keserse alır, aşağı keserse satar.
 - **Bollinger:** Fiyat alt banda inince alır, üst banda çıkınca satar.
 
+**Ek filtreler (MACD & Bollinger):** Alımları daraltmak için opsiyonel filtreler — **Trend MA**
+(yalnızca fiyat EMA üzerindeyken al), MACD'de **sıfır çizgisi** (yalnızca MACD > 0 iken al),
+Bollinger'de **RSI onayı** (alımda RSI ≤ 40). Bu filtreler hem canlıda hem backtest'te uygulanır.
+
 **Backtest:** Her trade botunun detayında **Backtest** ile, botun kayıtlı ayarlarını geçmiş mum
-verisi üzerinde simüle edip (işlem sayısı, kazanma oranı, K/Z, al-tut karşılaştırması) sonucu
-görebilirsiniz — gerçek emir verilmez. (Basit simülasyon; komisyon/kayma hesaba katılmaz.)
+verisi üzerinde simüle edersiniz (gerçek emir verilmez). Sonuçta işlem sayısı, kazanma oranı,
+toplam K/Z, al-tut karşılaştırması ve **equity (sermaye) eğrisi grafiği** gösterilir.
+**Komisyon (%)** ve **kayma/slippage (%)** modele dahil edilir (formdan ayarlanır).
 
 Her botta **bütçe**, **işlem tutarı**, **maksimum alım fiyatı** ve **mod** (sim/canlı) ayarlanır.
 `bot:trade` komutu scheduler ile **her dakika** çalışır. İşlemler ve hatalar Telegram'a da düşer.
