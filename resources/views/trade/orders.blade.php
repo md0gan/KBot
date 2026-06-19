@@ -4,7 +4,10 @@
 @section('content')
     <div class="flex items-center justify-between mb-6">
         <h1 class="text-2xl font-bold">Trade İşlem Geçmişi</h1>
-        <a href="{{ route('trade.index') }}" class="text-sm text-slate-500 hover:text-slate-700">← Trade</a>
+        <div class="flex items-center gap-3">
+            <a href="{{ route('trade.orders.export', request()->only('bot')) }}" class="text-sm px-3 py-2 rounded-lg bg-white border border-slate-300 hover:bg-slate-50">⬇ CSV indir</a>
+            <a href="{{ route('trade.index') }}" class="text-sm text-slate-500 hover:text-slate-700">← Trade</a>
+        </div>
     </div>
 
     <form method="GET" class="bg-white rounded-xl shadow-sm border border-slate-200 p-4 mb-4 flex flex-wrap gap-3 items-end">

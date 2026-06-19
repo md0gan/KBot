@@ -9,6 +9,7 @@ use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\View\View;
+use Symfony\Component\HttpFoundation\StreamedResponse;
 
 class TradeBotController extends Controller
 {
@@ -203,6 +204,43 @@ class TradeBotController extends Controller
         $bots = $request->user()->tradeBots()->orderBy('symbol')->get();
 
         return view('trade.orders', compact('orders', 'bots'));
+    }
+
+    /** Trade islem gecmisini CSV (UTF-8 BOM, Excel uyumlu) olarak indirir. Bot filtresine uyar. */
+    public function exportOrders(Request $request): StreamedResponse
+    {
+        $query = $request->user()->tradeOrders()->latest();
+        if ($request->filled('bot')) {
+            $query->where('trade_bot_id', $request->integer('bot'));
+        }
+
+        $filename = 'trade-islemleri-'.now()->format('Ymd-His').'.csv';
+
+        return response()->streamDownload(function () use ($query) {
+            $out = fopen('php://output', 'w');
+            fwrite($out, "\xEF\xBB\xBF"); // Excel'de Turkce karakterler icin UTF-8 BOM
+            fputcsv($out, ['Tarih', 'Sembol', 'Strateji', 'Yon', 'Mod', 'Miktar', 'Fiyat', 'Tutar', 'K/Z', 'Sebep', 'Durum']);
+
+            $query->chunk(500, function ($orders) use ($out) {
+                foreach ($orders as $o) {
+                    fputcsv($out, [
+                        $o->executed_at?->format('Y-m-d H:i:s'),
+                        $o->symbol,
+                        $o->strategy,
+                        $o->side,
+                        $o->mode,
+                        rtrim(rtrim(number_format((float) $o->quantity, 12, '.', ''), '0'), '.'),
+                        rtrim(rtrim(number_format((float) $o->price, 12, '.', ''), '0'), '.'),
+                        number_format((float) $o->quote_amount, 2, '.', ''),
+                        $o->realized_profit !== null ? number_format((float) $o->realized_profit, 2, '.', '') : '',
+                        $o->reason,
+                        $o->status,
+                    ]);
+                }
+            });
+
+            fclose($out);
+        }, $filename, ['Content-Type' => 'text/csv; charset=UTF-8']);
     }
 
     public function backtest(Request $request, TradeBot $tradeBot): View
