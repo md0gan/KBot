@@ -275,7 +275,7 @@ class Backtest
         if ($rangeMode === 'auto') {
             $pct = (float) ($p['percent'] ?? 10) / 100;
             $lower = $first * (1 - $pct);
-            $upper = $first * (1 + $pct);
+            $upper = (($p['anchor'] ?? 'symmetric') === 'below') ? $first : $first * (1 + $pct);
         } else {
             $lower = (float) ($p['lower'] ?? 0);
             $upper = (float) ($p['upper'] ?? 0);

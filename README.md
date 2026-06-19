@@ -283,8 +283,11 @@ Menüden **Trade → + Trade botu ekle**. Stratejiler:
 
 - **Grid:** Fiyat aralığı kademelere bölünür; fiyat bir kademenin alış seviyesine inince alır,
   bir kademe yukarı (satış seviyesi) çıkınca satar. Aralık **manuel** (alt/üst fiyat) veya
-  **otomatik** (güncel fiyat ±%) belirlenir; bütçe kademelere bölünür. **Trailing** açılırsa,
-  fiyat aralık dışına çıkıp pozisyon boşaldığında grid güncel fiyata yeniden ortalanır (piyasayı takip).
+  **otomatik** (güncel fiyat ±%) belirlenir; bütçe kademelere bölünür. Otomatik aralıkta
+  **başlangıç noktası** seçilir: *alım merdiveni* (tüm kademeler güncel fiyatın altında — bot
+  yalnızca düştükçe alır) ya da *simetrik* (±%). **Trailing** açılırsa, fiyat aralık dışına çıkıp
+  pozisyon boşaldığında grid güncel fiyata göre yeniden konumlanır (piyasayı takip). Bir kademe
+  yalnızca fiyat o seviyeye **yukarıdan inerek** dokununca alır (kurulumda toplu alım olmaz).
 - **RSI:** RSI aşırı satım eşiğinin altına inince alır, aşırı alım eşiğinin üstüne çıkınca satar.
 - **MA Kesişimi:** Kısa MA uzun MA'yı yukarı keserse alır, aşağı keserse satar (SMA/EMA).
 - **MACD:** MACD çizgisi sinyal çizgisini yukarı keserse alır, aşağı keserse satar.

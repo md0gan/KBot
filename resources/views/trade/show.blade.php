@@ -70,7 +70,7 @@
                         <div class="flex justify-between"><dt class="text-slate-500">Maks. alım fiyatı</dt><dd>{{ kb_price($tradeBot->max_buy_price) }}</dd></div>
                     @endif
                     @if ($tradeBot->strategy === 'grid')
-                        <div class="flex justify-between"><dt class="text-slate-500">Aralık</dt><dd>{{ ($p['range_mode'] ?? 'manual') === 'auto' ? 'Otomatik ±%'.($p['percent'] ?? '') : kb_price($p['lower'] ?? 0).' – '.kb_price($p['upper'] ?? 0) }}</dd></div>
+                        <div class="flex justify-between"><dt class="text-slate-500">Aralık</dt><dd>{{ ($p['range_mode'] ?? 'manual') === 'auto' ? (($p['anchor'] ?? 'symmetric') === 'below' ? 'Otomatik −%'.($p['percent'] ?? '').' (alım merdiveni)' : 'Otomatik ±%'.($p['percent'] ?? '').' (simetrik)') : kb_price($p['lower'] ?? 0).' – '.kb_price($p['upper'] ?? 0) }}</dd></div>
                         <div class="flex justify-between"><dt class="text-slate-500">Kademe</dt><dd>{{ $p['levels'] ?? '—' }}</dd></div>
                     @elseif ($tradeBot->strategy === 'rsi')
                         <div class="flex justify-between"><dt class="text-slate-500">Zaman / Periyot</dt><dd>{{ $p['interval'] ?? '15m' }} / {{ $p['period'] ?? 14 }}</dd></div>

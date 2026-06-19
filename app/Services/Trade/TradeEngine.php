@@ -283,7 +283,8 @@ class TradeEngine
             }
             $pct = (float) ($params['percent'] ?? 10) / 100;
             $lower = $price * (1 - $pct);
-            $upper = $price * (1 + $pct);
+            // "below": grid tamamen guncel fiyatin altinda (alim merdiveni); "symmetric": ±%
+            $upper = (($params['anchor'] ?? 'symmetric') === 'below') ? $price : $price * (1 + $pct);
         } else {
             $lower = (float) ($params['lower'] ?? 0);
             $upper = (float) ($params['upper'] ?? 0);
@@ -330,7 +331,10 @@ class TradeEngine
             return false;
         }
 
-        $newLower = max(0.0, $price - $width / 2);
+        // "below" ise gridi guncel fiyatin altina, degilse fiyatin etrafina ortala
+        $newLower = ($bot->param('anchor', 'symmetric') === 'below')
+            ? max(0.0, $price - $width)
+            : max(0.0, $price - $width / 2);
         $step = $width / $count;
 
         $bot->gridLevels()->delete();

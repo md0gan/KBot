@@ -106,6 +106,14 @@
             <input type="number" name="percent" step="0.1" min="0.1" max="90" value="{{ old('percent', $p['percent'] ?? 10) }}"
                    class="w-full rounded-lg border-slate-300 focus:border-sky-500 focus:ring-sky-500">
         </div>
+        <div class="grid-auto">
+            <label class="block text-sm font-medium text-slate-700 mb-1">Başlangıç Noktası</label>
+            <select name="anchor" class="w-full rounded-lg border-slate-300 focus:border-sky-500 focus:ring-sky-500">
+                <option value="below" @selected(old('anchor', $p['anchor'] ?? 'below') === 'below')>Güncel fiyatın altına (alım merdiveni)</option>
+                <option value="symmetric" @selected(old('anchor', $p['anchor'] ?? 'below') === 'symmetric')>Simetrik (±%)</option>
+            </select>
+            <p class="text-xs text-slate-400 mt-1">"Alım merdiveni": tüm kademeler güncel fiyatın altında; bot yalnızca düştükçe alır.</p>
+        </div>
         <div class="md:col-span-2">
             <label class="flex items-center gap-2">
                 <input type="hidden" name="trailing" value="0">

@@ -266,6 +266,7 @@ class TradeBotController extends Controller
             'percent' => ['nullable', 'numeric', 'min:0.1', 'max:90'],
             'levels' => ['nullable', 'integer', 'min:2', 'max:100'],
             'trailing' => ['nullable', 'boolean'],
+            'anchor' => ['nullable', 'in:symmetric,below'],
             // rsi / ma / macd / bollinger ortak
             'interval' => ['nullable', 'string', 'max:8'],
             'period' => ['nullable', 'integer', 'min:2', 'max:200'],
@@ -295,6 +296,7 @@ class TradeBotController extends Controller
                 'percent' => (float) ($d['percent'] ?? 10),
                 'levels' => (int) ($d['levels'] ?? 5),
                 'trailing' => (bool) ($d['trailing'] ?? false),
+                'anchor' => in_array($d['anchor'] ?? '', ['symmetric', 'below'], true) ? $d['anchor'] : 'symmetric',
             ],
             'rsi' => [
                 'interval' => $d['interval'] ?? '15m',
