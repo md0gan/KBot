@@ -23,7 +23,8 @@
             <span class="text-xs px-2 py-0.5 rounded-full {{ $emode === 'live' ? 'bg-red-100 text-red-700' : 'bg-emerald-100 text-emerald-700' }}">{{ $emode === 'live' ? 'CANLI' : 'SİM' }}</span>
             <span class="text-xs px-2 py-0.5 rounded-full bg-slate-100 text-slate-500">{{ config('bot.modes')[$tradeBot->mode] ?? $tradeBot->mode }}</span>
         </div>
-        <div class="flex flex-wrap gap-2">
+        <div class="flex flex-wrap items-center gap-2">
+            @include('trade._autorefresh')
             <form method="POST" action="{{ route('trade.run', $tradeBot) }}">@csrf
                 <button class="px-3 py-2 text-sm rounded-lg bg-slate-900 text-white hover:bg-slate-700">▶ Çalıştır</button>
             </form>

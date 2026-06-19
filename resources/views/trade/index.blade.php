@@ -7,7 +7,8 @@
             <h1 class="text-2xl font-bold">Trade / Scalp</h1>
             <p class="text-sm text-slate-500">Yatırım modundan tamamen ayrı izlenir.</p>
         </div>
-        <div class="flex gap-2">
+        <div class="flex flex-wrap items-center gap-3">
+            @include('trade._autorefresh')
             <a href="{{ route('trade.orders') }}" class="px-3 py-2 text-sm rounded-lg bg-white border border-slate-300 hover:bg-slate-50">İşlem geçmişi</a>
             <a href="{{ route('trade.create') }}" class="px-3 py-2 text-sm rounded-lg bg-slate-900 text-white hover:bg-slate-700 font-semibold">+ Trade botu ekle</a>
         </div>
