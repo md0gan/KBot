@@ -66,6 +66,12 @@
                 <dl class="text-sm space-y-2">
                     <div class="flex justify-between"><dt class="text-slate-500">Strateji</dt><dd>{{ $tradeBot->strategyLabel() }}</dd></div>
                     <div class="flex justify-between"><dt class="text-slate-500">Bütçe</dt><dd>{{ kb_money($tradeBot->budget) }} {{ $tradeBot->quote_asset }}</dd></div>
+                    @if ($tradeBot->param('compounding', false))
+                        <div class="flex justify-between"><dt class="text-slate-500">Compounding</dt><dd class="text-emerald-600">açık (kâr bütçeye ekleniyor)</dd></div>
+                    @endif
+                    @if ($tradeBot->param('max_loss_pct', 0) > 0)
+                        <div class="flex justify-between"><dt class="text-slate-500">Zarar durdurma</dt><dd>bütçenin %{{ rtrim(rtrim(number_format($tradeBot->param('max_loss_pct'), 2, '.', ''), '0'), '.') }}'i</dd></div>
+                    @endif
                     @if ($tradeBot->max_buy_price)
                         <div class="flex justify-between"><dt class="text-slate-500">Maks. alım fiyatı</dt><dd>{{ kb_price($tradeBot->max_buy_price) }}</dd></div>
                     @endif

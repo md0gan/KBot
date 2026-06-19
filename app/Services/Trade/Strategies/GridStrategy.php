@@ -36,8 +36,8 @@ class GridStrategy implements Strategy
         }
 
         $perLevelQuote = $bot->budget > 0
-            ? $bot->budget / $levels->count()
-            : $bot->order_size;
+            ? $engine->effectiveBudget($bot) / $levels->count()
+            : $engine->effectiveOrderSize($bot);
 
         // Onceki tur fiyati. Yoksa (ilk tur) kesisim olusmaz -> kurulumda toplu alim olmaz.
         $prev = $engine->previousPrice;

@@ -33,7 +33,7 @@ class BollingerStrategy implements Strategy
             if (! $this->passesEntryFilters($bot, $closes, $price)) {
                 return ['BB al sinyali var ama filtre (trend/RSI) engelledi.'];
             }
-            $order = $engine->buy($bot, $bot->order_size, 'bb_buy', $price);
+            $order = $engine->buy($bot, $engine->effectiveOrderSize($bot), 'bb_buy', $price);
 
             return [$order ? 'Fiyat alt bantta → AL' : 'BB al sinyali ama alim yapilamadi.'];
         }

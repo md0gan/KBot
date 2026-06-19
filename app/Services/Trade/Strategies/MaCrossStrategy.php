@@ -34,7 +34,7 @@ class MaCrossStrategy implements Strategy
         $holding = $pos && $pos->quantity > 0;
 
         if ($signal === 'bullish' && ! $holding) {
-            $order = $engine->buy($bot, $bot->order_size, 'ma_buy', $price);
+            $order = $engine->buy($bot, $engine->effectiveOrderSize($bot), 'ma_buy', $price);
 
             return [$order ? 'MA yukari kesti → AL' : 'MA al sinyali ama alim yapilamadi.'];
         }

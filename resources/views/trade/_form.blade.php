@@ -72,6 +72,21 @@
             <span class="text-sm text-slate-700">Aktif</span>
         </label>
     </div>
+
+    <div>
+        <label class="block text-sm font-medium text-slate-700 mb-1">Zarar Durdurma (% — 0 = kapalı)</label>
+        <input type="number" name="max_loss_pct" step="0.1" min="0" max="100" value="{{ old('max_loss_pct', $p['max_loss_pct'] ?? 0) }}"
+               class="w-full rounded-lg border-slate-300 focus:border-sky-500 focus:ring-sky-500">
+        <p class="text-xs text-slate-400 mt-1">Toplam K/Z bütçenin bu yüzdesi kadar zarara ulaşınca bot otomatik durur (örn. 50).</p>
+    </div>
+    <div class="flex items-center">
+        <label class="flex items-center gap-2">
+            <input type="hidden" name="compounding" value="0">
+            <input type="checkbox" name="compounding" value="1" @checked(old('compounding', $p['compounding'] ?? false))
+                   class="rounded border-slate-300 text-sky-600 focus:ring-sky-500">
+            <span class="text-sm text-slate-700">Kârı bütçeye ekle (compounding)</span>
+        </label>
+    </div>
 </div>
 
 {{-- Grid parametreleri --}}

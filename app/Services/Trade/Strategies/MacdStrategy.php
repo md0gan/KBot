@@ -34,7 +34,7 @@ class MacdStrategy implements Strategy
             if (! $this->passesEntryFilters($bot, $closes, $price, $fast, $slow, $signal)) {
                 return ['MACD al sinyali var ama filtre (trend/sıfır çizgisi) engelledi.'];
             }
-            $order = $engine->buy($bot, $bot->order_size, 'macd_buy', $price);
+            $order = $engine->buy($bot, $engine->effectiveOrderSize($bot), 'macd_buy', $price);
 
             return [$order ? 'MACD yukari kesti → AL' : 'MACD al sinyali ama alim yapilamadi.'];
         }

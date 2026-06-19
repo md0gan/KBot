@@ -258,6 +258,8 @@ class TradeBotController extends Controller
             'order_size' => ['nullable', 'numeric', 'min:0'],
             'max_buy_price' => ['nullable', 'numeric', 'min:0'],
             'enabled' => ['nullable', 'boolean'],
+            'compounding' => ['nullable', 'boolean'],
+            'max_loss_pct' => ['nullable', 'numeric', 'min:0', 'max:100'],
             'notes' => ['nullable', 'string', 'max:1000'],
             // grid
             'range_mode' => ['nullable', 'in:manual,auto'],
@@ -288,7 +290,7 @@ class TradeBotController extends Controller
 
     protected function buildParams(array $d): array
     {
-        return match ($d['strategy']) {
+        $params = match ($d['strategy']) {
             'grid' => [
                 'range_mode' => $d['range_mode'] ?? 'manual',
                 'lower' => (float) ($d['lower'] ?? 0),
@@ -327,6 +329,12 @@ class TradeBotController extends Controller
             ],
             default => [],
         };
+
+        // Tum stratejilere ortak: kar biriktirme + zarar durdurma
+        $params['compounding'] = (bool) ($d['compounding'] ?? false);
+        $params['max_loss_pct'] = (float) ($d['max_loss_pct'] ?? 0);
+
+        return $params;
     }
 
     protected function authorizeBot(Request $request, TradeBot $tradeBot): void

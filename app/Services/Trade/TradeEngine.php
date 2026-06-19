@@ -43,6 +43,33 @@ class TradeEngine
         return $this->setting->trading_mode ?? 'simulation';
     }
 
+    /** Compounding acikken bütçeye gerceklesen kar/zarari ekler (yoksa sabit). */
+    public function effectiveBudget(TradeBot $bot): float
+    {
+        $budget = (float) $bot->budget;
+        if ($bot->param('compounding', false)) {
+            $realized = (float) ($bot->position?->realized_profit ?? 0);
+
+            return max(0.0, $budget + $realized);
+        }
+
+        return $budget;
+    }
+
+    /** Compounding acikken islem tutarini gerceklesen kar/zararla oranli buyutur/kucultur. */
+    public function effectiveOrderSize(TradeBot $bot): float
+    {
+        $size = (float) $bot->order_size;
+        if ($bot->param('compounding', false) && $bot->budget > 0) {
+            $realized = (float) ($bot->position?->realized_profit ?? 0);
+            $factor = max(0.0, ((float) $bot->budget + $realized) / (float) $bot->budget);
+
+            return $size * $factor;
+        }
+
+        return $size;
+    }
+
     /* ======================================================================
      | Calistirma
      * ==================================================================== */
@@ -80,6 +107,11 @@ class TradeEngine
 
         $this->updateValuation($bot, $price);
 
+        // Zarar durdurma: toplam K/Z bütçenin -%X altina dustuyse botu durdur
+        if ($stop = $this->checkStopLoss($bot, $price)) {
+            return [$stop];
+        }
+
         $strategy = StrategyFactory::make($bot->strategy);
         $lines = $strategy->run($bot, $this, $price);
 
@@ -87,6 +119,42 @@ class TradeEngine
         $bot->save();
 
         return $lines;
+    }
+
+    /** Toplam (gerceklesen + acik) K/Z bütçenin -%X altina dustuyse botu durdurur. */
+    protected function checkStopLoss(TradeBot $bot, float $price): ?string
+    {
+        $pct = (float) $bot->param('max_loss_pct', 0);
+        if ($pct <= 0 || $bot->budget <= 0) {
+            return null;
+        }
+
+        $pos = $bot->position()->first();
+        if (! $pos) {
+            return null;
+        }
+
+        $realized = (float) $pos->realized_profit;
+        $unrealized = $pos->quantity * $price - (float) $pos->cost_basis;
+        $totalPl = $realized + $unrealized;
+        $threshold = -($pct / 100) * (float) $bot->budget;
+
+        if ($totalPl <= $threshold) {
+            $bot->enabled = false;
+            $bot->last_signal = 'DURDURULDU (zarar eşiği %'.rtrim(rtrim(number_format($pct, 2, '.', ''), '0'), '.').')';
+            $bot->save();
+
+            if ($this->notifier->notifyErrors) {
+                $this->notifier->send(
+                    "🛑 [Trade] {$bot->symbol} DURDURULDU — zarar eşiği aşıldı.\n".
+                    'Toplam K/Z: '.kb_money($totalPl)." {$bot->quote_asset} (eşik: bütçenin %{$pct}'i)."
+                );
+            }
+
+            return 'Zarar durdurma: bot durduruldu (toplam K/Z '.kb_money($totalPl)." {$bot->quote_asset}).";
+        }
+
+        return null;
     }
 
     protected function updateValuation(TradeBot $bot, float $price): void

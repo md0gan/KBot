@@ -303,6 +303,9 @@ toplam K/Z, al-tut karşılaştırması ve **equity (sermaye) eğrisi grafiği**
 **Komisyon (%)** ve **kayma/slippage (%)** modele dahil edilir (formdan ayarlanır).
 
 Her botta **bütçe**, **işlem tutarı**, **maksimum alım fiyatı** ve **mod** (sim/canlı) ayarlanır.
+İki ek seçenek: **Compounding** (açıksa gerçekleşen kâr bütçeye eklenir, alım tutarları büyür;
+zararda küçülür — kapalıysa bütçe sabit) ve **Zarar Durdurma** (toplam K/Z, bütçenin belirlenen
+yüzdesi kadar zarara ulaşınca bot otomatik durdurulur ve Telegram'a bildirilir).
 `bot:trade` komutu scheduler ile **her dakika** çalışır. İşlemler ve hatalar Telegram'a da düşer.
 Strateji çerçevesi geneldir; ileride yeni stratejiler eklenebilir.
 

@@ -31,7 +31,7 @@ class RsiStrategy implements Strategy
         $holding = $pos && $pos->quantity > 0;
 
         if ($rsi <= $oversold && ! $holding) {
-            $order = $engine->buy($bot, $bot->order_size, 'rsi_buy', $price);
+            $order = $engine->buy($bot, $engine->effectiveOrderSize($bot), 'rsi_buy', $price);
 
             return [$order
                 ? 'RSI '.round($rsi, 1)." ≤ {$oversold} → AL"
