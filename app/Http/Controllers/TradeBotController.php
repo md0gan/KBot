@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\TradeBot;
 use App\Services\Trade\Backtest;
 use App\Services\Trade\TradeEngine;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\View\View;
@@ -337,6 +338,58 @@ class TradeBotController extends Controller
         $params['max_loss_pct'] = (float) ($d['max_loss_pct'] ?? 0);
 
         return $params;
+    }
+
+    /** Fiyat grafigi icin mum (kline) verisi + grid kademeleri (JSON). */
+    public function candles(Request $request, TradeBot $tradeBot): JsonResponse
+    {
+        $this->authorizeBot($request, $tradeBot);
+
+        $interval = (string) $request->query('interval', '1h');
+        if (! in_array($interval, ['1m', '5m', '15m', '30m', '1h', '4h', '1d'], true)) {
+            $interval = '1h';
+        }
+
+        $points = [];
+        try {
+            $klines = (new TradeEngine($request->user()))
+                ->client()
+                ->getKlines($tradeBot->symbol, $interval, 120, $tradeBot->symbol_type ?? 1);
+
+            foreach ($klines as $k) {
+                if (is_array($k) && isset($k[0], $k[4])) {
+                    // Standart Binance dizisi: [openTime, o, h, l, close, ...]
+                    $points[] = ['t' => (int) $k[0], 'c' => (float) $k[4]];
+                } elseif (is_array($k)) {
+                    $t = $k['openTime'] ?? $k['time'] ?? $k['t'] ?? null;
+                    $c = $k['close'] ?? $k['c'] ?? null;
+                    if ($t !== null && $c !== null) {
+                        $points[] = ['t' => (int) $t, 'c' => (float) $c];
+                    }
+                }
+            }
+        } catch (\Throwable $e) {
+            $points = [];
+        }
+
+        $grid = [];
+        if ($tradeBot->strategy === 'grid') {
+            foreach ($tradeBot->gridLevels()->orderBy('level_index')->get() as $lv) {
+                $grid[] = [
+                    'index' => $lv->level_index,
+                    'buy' => (float) $lv->buy_price,
+                    'sell' => (float) $lv->sell_price,
+                    'status' => $lv->status,
+                ];
+            }
+        }
+
+        return response()->json([
+            'symbol' => $tradeBot->symbol,
+            'interval' => $interval,
+            'points' => $points,
+            'grid' => $grid,
+        ]);
     }
 
     protected function authorizeBot(Request $request, TradeBot $tradeBot): void

@@ -42,6 +42,92 @@
         </div>
     </div>
 
+    {{-- Fiyat grafigi (mum kapanislari) + grid kademeleri --}}
+    <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-5 mb-6">
+        <div class="flex flex-wrap items-center justify-between gap-2 mb-3">
+            <h2 class="font-semibold">Fiyat Grafiği <span class="text-xs font-normal text-slate-400">{{ $tradeBot->symbol }}</span></h2>
+            <div class="flex items-center gap-2">
+                @if ($tradeBot->strategy === 'grid')
+                    <span class="text-xs text-slate-400">— <span class="text-sky-500">┄ alış kademesi</span> · <span class="text-emerald-600">━ tutulan</span></span>
+                @endif
+                <select id="kb-chart-interval" class="rounded-md border-slate-300 text-xs py-1">
+                    @foreach (['1m','5m','15m','30m','1h','4h','1d'] as $iv)
+                        <option value="{{ $iv }}" @selected($iv === '1h')>{{ $iv }}</option>
+                    @endforeach
+                </select>
+            </div>
+        </div>
+        <div style="height: 320px;"><canvas id="kb-price-chart"></canvas></div>
+        <p id="kb-chart-empty" class="hidden text-sm text-slate-400 text-center py-10">Grafik verisi alınamadı.</p>
+    </div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+    <script>
+        (function () {
+            var canvas = document.getElementById('kb-price-chart');
+            if (!canvas) return;
+            var sel = document.getElementById('kb-chart-interval');
+            var empty = document.getElementById('kb-chart-empty');
+            var base = "{{ route('trade.candles', $tradeBot) }}";
+            var chart = null;
+            var KEY = 'kb_chart_iv_{{ $tradeBot->id }}';
+            try { var sv = localStorage.getItem(KEY); if (sv) sel.value = sv; } catch (e) {}
+
+            function fmt(ts) {
+                return new Date(ts).toLocaleString('tr-TR', { month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit' });
+            }
+            function showEmpty(on) {
+                canvas.style.display = on ? 'none' : '';
+                if (empty) empty.classList.toggle('hidden', !on);
+            }
+            function load() {
+                if (!window.Chart) return;
+                fetch(base + '?interval=' + encodeURIComponent(sel.value), { credentials: 'same-origin', headers: { 'Accept': 'application/json' } })
+                    .then(function (r) { return r.json(); })
+                    .then(function (d) {
+                        var pts = (d && d.points) || [];
+                        if (!pts.length) { showEmpty(true); return; }
+                        showEmpty(false);
+                        var labels = pts.map(function (p) { return fmt(p.t); });
+                        var prices = pts.map(function (p) { return p.c; });
+
+                        var datasets = [{
+                            label: 'Fiyat', data: prices, borderColor: '#0ea5e9',
+                            backgroundColor: 'rgba(14,165,233,0.10)', fill: true, tension: 0.15,
+                            pointRadius: 0, borderWidth: 2, order: 0
+                        }];
+                        (d.grid || []).forEach(function (g) {
+                            var holding = g.status === 'holding';
+                            datasets.push({
+                                label: '', data: labels.map(function () { return g.buy; }),
+                                borderColor: holding ? 'rgba(16,185,129,0.9)' : 'rgba(2,132,199,0.45)',
+                                borderDash: holding ? [] : [4, 4], borderWidth: holding ? 1.5 : 1,
+                                pointRadius: 0, fill: false, tension: 0, order: 5
+                            });
+                        });
+
+                        if (chart) chart.destroy();
+                        chart = new Chart(canvas, {
+                            type: 'line',
+                            data: { labels: labels, datasets: datasets },
+                            options: {
+                                responsive: true, maintainAspectRatio: false, animation: false,
+                                interaction: { intersect: false, mode: 'index' },
+                                plugins: {
+                                    legend: { display: true, labels: { filter: function (i) { return i.text; } } },
+                                    tooltip: { callbacks: { label: function (c) { return c.dataset.label ? (c.dataset.label + ': ' + c.parsed.y) : null; } } }
+                                },
+                                scales: { x: { ticks: { maxTicksLimit: 8, maxRotation: 0 } }, y: { position: 'right' } }
+                            }
+                        });
+                    })
+                    .catch(function () { showEmpty(true); });
+            }
+            sel.addEventListener('change', function () { try { localStorage.setItem(KEY, sel.value); } catch (e) {} load(); });
+            load();
+        })();
+    </script>
+
     <div class="grid lg:grid-cols-3 gap-6">
         <div class="lg:col-span-1 space-y-6">
             <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-5">
