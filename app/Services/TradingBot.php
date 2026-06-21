@@ -629,9 +629,13 @@ class TradingBot
 
         $emoji = $trade->side === 'BUY' ? '🟢' : '💰';
         $modeLabel = $trade->mode === 'live' ? 'CANLI' : 'sim';
+        $nameSuffix = $coin->name ? " · {$coin->name}" : ''; // isim doluysa başlığa ekle
+        // "Tamamını sat" stratejisiyle yapılan kâr-al satışı pozisyonu sıfırlar → belirgin göster.
+        $isSellAllReset = $trade->kind === 'profit_take' && $coin->take_profit_strategy === 'sell_all';
+        $kindLabel = $trade->kindLabel().($isSellAllReset ? ' (Tamamını Sat)' : '');
 
         $lines = [
-            "{$emoji} {$trade->kindLabel()} — {$coin->symbol} ({$modeLabel})",
+            "{$emoji} {$kindLabel} — {$coin->symbol}{$nameSuffix} ({$modeLabel})",
             "Sebep: ".kb_reason_label($trade->reason),
             "Miktar: ".kb_qty($trade->quantity)." {$coin->base_asset}",
             "Fiyat: ".kb_price($trade->price)." {$coin->quote_asset}",
@@ -640,6 +644,10 @@ class TradingBot
 
         if ($trade->realized_profit > 0) {
             $lines[] = "Kâr: +".kb_money($trade->realized_profit)." {$coin->quote_asset}";
+        }
+
+        if ($isSellAllReset) {
+            $lines[] = "♻️ Tüm pozisyon satıldı ve sıfırlandı; düzenli alım yeniden başlıyor.";
         }
 
         $this->notifier->send(implode("\n", $lines));
