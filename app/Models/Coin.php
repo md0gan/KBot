@@ -16,6 +16,7 @@ class Coin extends Model
         'base_asset',
         'quote_asset',
         'symbol',
+        'name',
         'symbol_type',
         'enabled',
         'mode',

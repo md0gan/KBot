@@ -62,7 +62,7 @@
                 @endphp
                 <div class="bg-white rounded-xl p-4 shadow-sm border border-slate-200">
                     <div class="flex items-center justify-between">
-                        <a href="{{ route('coins.show', $coin) }}" class="font-bold text-lg hover:text-sky-600">{{ $coin->symbol }}</a>
+                        <a href="{{ route('coins.show', $coin) }}" class="font-bold text-lg hover:text-sky-600">{{ $coin->symbol }}@if ($coin->name)<span class="block text-xs font-normal text-slate-400">{{ $coin->name }}</span>@endif</a>
                         <div class="flex items-center gap-1">
                             @if ($coin->enabled)
                                 <span class="text-xs px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-700">aktif</span>

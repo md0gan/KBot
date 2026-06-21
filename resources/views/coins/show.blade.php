@@ -15,6 +15,8 @@
     <div class="flex flex-wrap items-center justify-between gap-3 mb-6">
         <div class="flex items-center gap-3">
             <h1 class="text-2xl font-bold">{{ $coin->symbol }}</h1>
+            @if ($coin->name)<span class="text-sm text-slate-400">· {{ $coin->name }}</span>@endif
+            <span class="text-xs px-2 py-0.5 rounded-full bg-slate-100 text-slate-600">{{ kb_mult($coin->profit_multiplier) }}x</span>
             @if ($coin->enabled)
                 <span class="text-xs px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-700">aktif</span>
             @else

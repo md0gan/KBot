@@ -258,20 +258,25 @@ class TradingBot
             return null;
         }
 
-        // --- Tetiklendi: satilacak deger ---
-        $excess = $value - $pos->cost_basis; // sermaye ustu kar
-        $fraction = $coin->take_profit_strategy === 'fixed_ratio'
-            ? max(0.0, min(1.0, (float) $coin->sell_ratio))
-            : 1.0; // leave_capital: karin tamamini al
+        // --- Tetiklendi: satilacak miktar ---
+        $isSellAll = $coin->take_profit_strategy === 'sell_all';
 
-        $sellValue = $excess * $fraction;
-        if ($sellValue <= 0) {
-            $pos->save();
+        if ($isSellAll) {
+            // Tamamini sat: tutulan TUM miktar satilir, pozisyon sifirlanir.
+            $sellQty = $this->roundQty($coin, $pos->quantity);
+        } else {
+            $excess = $value - $pos->cost_basis; // sermaye ustu kar
+            $fraction = $coin->take_profit_strategy === 'fixed_ratio'
+                ? max(0.0, min(1.0, (float) $coin->sell_ratio))
+                : 1.0; // leave_capital: karin tamamini al
+            $sellValue = $excess * $fraction;
+            if ($sellValue <= 0) {
+                $pos->save();
 
-            return null;
+                return null;
+            }
+            $sellQty = $this->roundQty($coin, min($sellValue / $price, $pos->quantity));
         }
-
-        $sellQty = $this->roundQty($coin, min($sellValue / $price, $pos->quantity));
 
         // Borsa minimumlari
         if ($sellQty <= 0) {
@@ -316,17 +321,30 @@ class TradingBot
             $raw = null;
         }
 
-        $trade = DB::transaction(function () use ($coin, $pos, $soldQty, $proceeds, $execPrice, $status, $orderId, $raw, $mode) {
+        $trade = DB::transaction(function () use ($coin, $soldQty, $proceeds, $execPrice, $status, $orderId, $raw, $mode, $isSellAll) {
             $locked = $coin->position()->lockForUpdate()->first();
 
-            $locked->quantity = max(0, $locked->quantity - $soldQty);
-            // Kar-al daima yalnizca "sermaye ustu" kismi satar; sermaye coinde kalir.
-            // Bu yuzden elde edilen tutarin TAMAMI USDT'ye cevrilen kardir (realized_profit += proceeds).
-            // Kalan miktarin guncel degeri yeni sermaye olur => carpan 1'e doner, acik kar 0'lanir.
-            // (Manuel sell() ise sermayeye girebildigi icin ortalama maliyetle proceeds - costOfSold yazar.)
-            $locked->cost_basis = $locked->quantity * $execPrice;
-            $locked->avg_price = $execPrice;
-            $locked->realized_profit += $proceeds;
+            if ($isSellAll) {
+                // TUM pozisyon satildi: gercek kar = gelir - satilanin maliyeti. Pozisyon sifirlanir.
+                $share = $locked->quantity > 0 ? min(1.0, $soldQty / $locked->quantity) : 0.0;
+                $costOfSold = $locked->cost_basis * $share;
+                $realized = $proceeds - $costOfSold;
+                $locked->quantity = max(0, $locked->quantity - $soldQty);
+                $locked->cost_basis = max(0, $locked->cost_basis - $costOfSold);
+                $locked->avg_price = $locked->quantity > 0 ? $locked->cost_basis / $locked->quantity : 0;
+                $locked->realized_profit += $realized;
+                $reason = 'Kar-al (tamamini sat): carpana ulasildi, pozisyon sifirlandi';
+            } else {
+                // Yalnizca "sermaye ustu" satilir; sermaye coinde kalir. Elde edilen tutarin TAMAMI
+                // nakde cevrilen kardir. Kalan miktarin guncel degeri yeni sermaye olur (carpan 1'e doner).
+                $locked->quantity = max(0, $locked->quantity - $soldQty);
+                $locked->cost_basis = $locked->quantity * $execPrice;
+                $locked->avg_price = $execPrice;
+                $locked->realized_profit += $proceeds;
+                $realized = $proceeds;
+                $reason = 'Kar-al: carpana ulasildi, kar nakde cevrildi';
+            }
+
             $locked->last_price = $execPrice;
             $locked->last_value = $locked->quantity * $execPrice;
             $locked->last_valued_at = now();
@@ -343,20 +361,26 @@ class TradingBot
                 'quantity' => $soldQty,
                 'price' => $execPrice,
                 'quote_amount' => $proceeds,
-                'realized_profit' => $proceeds,
+                'realized_profit' => $realized,
                 'status' => $status,
                 'order_id' => $orderId,
-                'reason' => 'Kar-al: carpana ulasildi, kar nakde cevrildi',
+                'reason' => $reason,
                 'raw' => $raw,
                 'executed_at' => now(),
             ]);
 
-            $this->log('info', 'profit_take', "{$coin->symbol} kar-al: {$soldQty} satildi, +{$proceeds} {$coin->quote_asset}", $coin, [
+            $this->log('info', 'profit_take', "{$coin->symbol} kar-al ({$coin->take_profit_strategy}): {$soldQty} satildi, +{$realized} {$coin->quote_asset}", $coin, [
                 'mode' => $mode,
             ]);
 
             return $trade;
         });
+
+        // Tamamini sat: pozisyon sifirlandi; coin etkinse DCA hemen yeniden baslasin.
+        if ($isSellAll && $coin->enabled) {
+            $coin->next_buy_at = now();
+            $coin->save();
+        }
 
         $this->notifyTrade($coin, $trade);
 

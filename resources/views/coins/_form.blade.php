@@ -1,6 +1,12 @@
 @php($coin = $coin ?? null)
 @php($quoteDefault = old('quote_asset', $coin->quote_asset ?? (auth()->user()->settings()->default_quote ?? 'TRY')))
 <div class="grid md:grid-cols-2 gap-5">
+    <div class="md:col-span-2">
+        <label class="block text-sm font-medium text-slate-700 mb-1">İsim / Etiket (opsiyonel)</label>
+        <input type="text" name="name" maxlength="60" value="{{ old('name', $coin->name ?? '') }}"
+               class="w-full rounded-lg border-slate-300 focus:border-sky-500 focus:ring-sky-500" placeholder="örn. BTC 2.5x uzun vade">
+        <p class="text-xs text-slate-400 mt-1">Aynı parite (örn. BTC_TRY) farklı çarpanlarla birden çok kez eklenebilir; ayırt etmek için isim verin.</p>
+    </div>
     <div>
         <label class="block text-sm font-medium text-slate-700 mb-1">Coin (Base Asset)</label>
         <input type="text" name="base_asset" required placeholder="BTC"

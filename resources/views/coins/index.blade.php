@@ -28,7 +28,10 @@
                     @forelse ($coins as $coin)
                         @php($pos = $coin->position)
                         <tr class="hover:bg-slate-50">
-                            <td class="px-4 py-2 font-semibold"><a href="{{ route('coins.show', $coin) }}" class="hover:text-sky-600">{{ $coin->symbol }}</a></td>
+                            <td class="px-4 py-2 font-semibold">
+                                <a href="{{ route('coins.show', $coin) }}" class="hover:text-sky-600">{{ $coin->symbol }}</a>
+                                @if ($coin->name)<div class="text-xs font-normal text-slate-400">{{ $coin->name }}</div>@endif
+                            </td>
                             <td class="px-4 py-2">
                                 @if ($coin->enabled)
                                     <span class="text-xs px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-700">aktif</span>

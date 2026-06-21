@@ -28,9 +28,8 @@ class CoinController extends Controller
 
         $symbol = $data['base_asset'].'_'.$data['quote_asset'];
 
-        if ($request->user()->coins()->where('symbol', $symbol)->exists()) {
-            return back()->withInput()->withErrors(['base_asset' => "Bu sembol zaten ekli: {$symbol}"]);
-        }
+        // Aynı sembol birden çok kez eklenebilir (örn. farklı kar-al çarpanı).
+        // Her coin kaydı kendi pozisyonunu (positions.coin_id) tutar; tekil kontrol yok.
 
         $coin = new Coin($data);
         $coin->symbol = $symbol;
@@ -87,10 +86,6 @@ class CoinController extends Controller
         $data = $this->validateData($request);
 
         $symbol = $data['base_asset'].'_'.$data['quote_asset'];
-        if ($symbol !== $coin->symbol
-            && $request->user()->coins()->where('symbol', $symbol)->whereKeyNot($coin->id)->exists()) {
-            return back()->withInput()->withErrors(['base_asset' => "Bu sembol zaten ekli: {$symbol}"]);
-        }
 
         $coin->fill($data);
         $coin->symbol = $symbol;
@@ -127,6 +122,7 @@ class CoinController extends Controller
     protected function validateData(Request $request): array
     {
         $validated = $request->validate([
+            'name' => ['nullable', 'string', 'max:60'],
             'base_asset' => ['required', 'string', 'max:32', 'regex:/^[A-Za-z0-9]+$/'],
             'quote_asset' => ['required', 'string', 'max:16', 'regex:/^[A-Za-z0-9]+$/'],
             'mode' => ['required', 'in:inherit,simulation,live'],
@@ -134,7 +130,7 @@ class CoinController extends Controller
             'buy_amount' => ['required', 'numeric', 'min:0.00000001'],
             'interval' => ['required', 'in:hourly,daily,weekly,monthly'],
             'profit_multiplier' => ['required', 'numeric', 'min:1.01'],
-            'take_profit_strategy' => ['required', 'in:leave_capital,fixed_ratio'],
+            'take_profit_strategy' => ['required', 'in:leave_capital,fixed_ratio,sell_all'],
             'sell_ratio' => ['nullable', 'numeric', 'min:0.01', 'max:1'],
             'max_buy_price' => ['nullable', 'numeric', 'min:0'],
             'notes' => ['nullable', 'string', 'max:1000'],
