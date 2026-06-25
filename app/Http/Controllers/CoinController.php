@@ -87,8 +87,19 @@ class CoinController extends Controller
 
         $symbol = $data['base_asset'].'_'.$data['quote_asset'];
 
+        $oldInterval = $coin->interval;
         $coin->fill($data);
         $coin->symbol = $symbol;
+
+        // Periyot degistiyse sonraki alimi YENI periyoda gore hemen yeniden planla.
+        // Aksi halde eski cadence'da kurulmus next_buy_at gecerli kalir ve degisiklik
+        // ancak bir sonraki alimdan sonra etkili olur (kullaniciya "eski periyot
+        // devam ediyor" gibi gorunur).
+        if ($coin->enabled && $coin->interval !== $oldInterval) {
+            $next = $coin->nextBuyAfter($coin->last_buy_at ?? now());
+            $coin->next_buy_at = $next->isPast() ? $coin->nextBuyAfter(now()) : $next;
+        }
+
         $coin->save();
 
         $this->tryFillFilters($request, $coin);
